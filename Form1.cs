@@ -18,20 +18,9 @@ namespace Plot_iNET_X
     {
         public selectChannel selChanObj;
         public PlotData GraphPlot;
-        public static List<double> dataToPlot;
-        public static List<double> dataToPlot2;
-        public static List<double> dataToPlot3;
-        GraphPane myPane;
-        private static RollingPointPairList list;
-        private static RollingPointPairList list2;
-        private static RollingPointPairList list3;
         public Form1()
         {
             InitializeComponent();
-            myPane = zedGraphControl1.GraphPane;
-            list = new RollingPointPairList(1024000);
-            list2 = new RollingPointPairList(1024000);
-            list3 = new RollingPointPairList(1024000);
 
         }
 
@@ -53,60 +42,6 @@ namespace Plot_iNET_X
             plot.Start();
         }
 
-        public void GetPacket()
-        {
-            OfflinePacketDevice selectedDevice = new OfflinePacketDevice(Globals.filePCAP);
-            dataToPlot = new List<double>();
-            dataToPlot2 = new List<double>();
-            dataToPlot3 = new List<double>();
-            // Open the capture file
-            using (PacketCommunicator communicator =
-                selectedDevice.Open(65536,                                  // portion of the packet to capture
-                                                                            // 65536 guarantees that the whole packet will be captured on all the link layers
-                                    PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
-                                    1000))                                  // read timeout
-            {
-                // Read and dispatch packets until EOF is reached
-                communicator.ReceivePackets(0, DispatcherHandler);
-            }
-
-            for (int x = 0; x != dataToPlot.Count;x++ )
-            {
-                //Console.WriteLine(x);
-                list.Add(x, dataToPlot[x]);
-                list2.Add(x, dataToPlot3[x]);
-                list3.Add(x, dataToPlot3[x]);
-            }
-            LineItem myCurve = myPane.AddCurve("data1", list, Color.Red, SymbolType.Diamond);
-            myPane.AddCurve("data2", list2, Color.Green, SymbolType.None);
-            myPane.AddCurve("data3", list3, Color.MediumPurple, SymbolType.None);
-            myCurve.Line.IsVisible = false;
-            dataToPlot.Clear();
-            dataToPlot2.Clear();
-            dataToPlot3.Clear();
-
-            //myPane.XAxis.Scale.Min = 0;
-            //myPane.XAxis.Scale.Max = 30;
-            //myPane.XAxis.Scale.MinorStep = 1;
-            //myPane.XAxis.Scale.MajorStep = 5;
-
-            zedGraphControl1.AxisChange();
-            zedGraphControl1.Invalidate();
-            this.SuspendLayout();
-            this.ResumeLayout(false);
-            this.Refresh();
-        }
-        private static void DispatcherHandler(Packet packet)
-        {
-            // print packet timestamp and packet length
-            //MessageBox.Show(packet.Timestamp.ToString("yyyy-MM-dd hh:mm:ss.fff") + " length:" + packet.Length);
-            dataToPlot.Add(packet.Ethernet.Length);
-            dataToPlot2.Add(packet.Length);
-            dataToPlot3.Add(packet.IpV4.Length);
-            //Console.WriteLine(packet.Timestamp.ToString());
-
-
-        }
 
         private void GetNewGraph()
         {
@@ -124,6 +59,7 @@ namespace Plot_iNET_X
                             GraphPlot.SuspendLayout();
                             GraphPlot.ResumeLayout(false);
                             GraphPlot.ShowDialog();
+
                         }
                     }
                 }
