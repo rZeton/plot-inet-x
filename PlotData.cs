@@ -58,10 +58,13 @@ namespace Plot_iNET_X
 #endregion Initialize_Globals
             
             InitializeComponent();
+            zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
+            zedGraphControl1.GraphPane.IsFontsScaled = false;
         }
 
         private void Form1_Resize(object sender, EventArgs e)
         {
+
             SetSize();
         }
         private void SetSize()
@@ -69,7 +72,68 @@ namespace Plot_iNET_X
             zedGraphControl1.Location = new Point(10, 10);
             // Leave a small margin around the outside of the control
             zedGraphControl1.Size = new Size(ClientRectangle.Width - 20,
-                                    ClientRectangle.Height - 20);
+                                    ClientRectangle.Height - 20);            
+        }
+        private void Add_item_toMenu(ZedGraphControl sender, ContextMenuStrip menuStrip, Point mousePt, ZedGraphControl.ContextMenuObjectState objState)
+        {
+            foreach (ToolStripMenuItem item in menuStrip.Items)
+            {
+                if ((string)item.Tag == "save_as")
+                {
+                    menuStrip.Items.Remove(item);
+                    break;
+                }
+            }
+            ToolStripMenuItem cm = new ToolStripMenuItem();
+            cm.Tag = "hide_legend";
+            cm.Name = "hide_legend";
+            cm.Text = "Hide Legend";
+            cm.Click += new EventHandler(HideLegend);
+            menuStrip.Items.Add(cm);
+
+            ToolStripMenuItem scroll = new ToolStripMenuItem();
+            scroll.Tag = "toggle_scroll";
+            scroll.Name = "toggle_scroll";
+            scroll.Text = "Toggle Mouse Zoom / Scroll";
+            scroll.Click += new EventHandler(ToggleZoom);
+            menuStrip.Items.Add(scroll);            
+        }
+
+        private void ToggleZoom(object sender, EventArgs e)
+        {
+            //zedGraphControl1.ZoomButtons = MouseButtons.None;
+            //zedGraphControl1.ZoomButtons2 = MouseButtons.None;
+            //zedGraphControl1.ZoomStepFraction = 0;
+            if (zedGraphControl1.PanModifierKeys == Keys.None)
+            {
+                zedGraphControl1.PanButtons = MouseButtons.Left;
+                zedGraphControl1.PanModifierKeys = Keys.Control;
+
+                zedGraphControl1.ZoomButtons = MouseButtons.Left;
+                zedGraphControl1.ZoomModifierKeys = Keys.None;
+
+            }
+            else
+            {
+                zedGraphControl1.PanButtons = MouseButtons.Left;
+                zedGraphControl1.PanModifierKeys = Keys.None;
+
+                zedGraphControl1.ZoomButtons = MouseButtons.Left;
+                zedGraphControl1.ZoomModifierKeys = Keys.Control;
+
+            }
+
+
+                //= !zedGraphControl1.IsEnableWheelZoom;
+            zedGraphControl1.Refresh();
+        }
+
+        private void HideLegend(object sender, EventArgs e)
+        {
+
+            zedGraphControl1.GraphPane.Legend.IsVisible = !zedGraphControl1.GraphPane.Legend.IsVisible;
+            //zedGraphControl1.GraphPane.CurveList.Clear();
+            zedGraphControl1.Refresh();
         }
 
 
@@ -90,31 +154,12 @@ namespace Plot_iNET_X
             // get a reference to the GraphPane
             GraphPane myPane = zgc.GraphPane;
 
+
             // Set the Titles
             myPane.Title.Text = String.Format("Stream {0}", streamID);
-
-            //Dictionary<string, double[]> dataToPlot = new Dictionary<string, double[]>();
-            
-            
-            //dataToPlot = LoadData(String.Format("{0}{1}.csv", Globals.outputFile[streamID], Globals.outputFileCnt.ToString().PadLeft(4,'0')), streamID);
-            //dataToPlot = null;
             myPane.XAxis.Title.Text = "Time [packet #]";
             myPane.YAxis.Title.Text = "Value";
-            /*
-            int dataItems = dataToPlot.First().Value.Length;
-            Dictionary<string, PointPairList> dataZed = new Dictionary<string, PointPairList>(dataItems);
 
-            double[] X = new double[dataItems];
-
-            for (int i = 0; i != dataItems; i++)
-            {
-                X[i] = (double)i;
-            }
-            foreach (string param in dataToPlot.Keys)
-            {
-                dataZed[param] = new PointPairList(X, dataToPlot[param]);
-            }
-            */
             List<Color> allColors = new List<Color>();
             var colors = getSomeColor.GetStaticPropertyBag(typeof(Color));
 
@@ -136,6 +181,7 @@ namespace Plot_iNET_X
             myPane.YAxis.MajorGrid.IsVisible = true;
             // Tell ZedGraph to refigure the
             // axes since the data have changed
+
             zgc.AxisChange();
         }
 
