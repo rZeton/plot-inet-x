@@ -26,6 +26,7 @@ namespace Plot_iNET_X
         public static int errorFileCnt;
         public static Dictionary<int, uint> streamLength;
         public static string filePCAP { get; set; }
+        public static string limitfile { get; set; }
 
         //statistics
         public static int totalFrames { get; set; }
@@ -43,6 +44,8 @@ namespace Plot_iNET_X
 
         public static Dictionary<int, Dictionary<string, double[]>> limitPCAP { get; set; }
         public static Dictionary<int, List<string>> channelsSelected { get; set; }
+
+        
     }
 
 

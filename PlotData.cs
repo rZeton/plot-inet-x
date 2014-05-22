@@ -12,14 +12,14 @@ using System.IO;
 using PcapDotNet.Core;
 using PcapDotNet.Packets;
 
+using System.Runtime.CompilerServices;
+
 namespace Plot_iNET_X
 {
     public partial class PlotData : Form
     {
         public double[] xData, yData;
         public static int streamID;
-        private static Dictionary<string,RollingPointPairList> list;
-
         public static byte[] frame =new byte[65536];
         public static Dictionary<string, List<double>> streamData;
 
@@ -276,8 +276,8 @@ namespace Plot_iNET_X
             zgc.AxisChange();
         }
 
-   
-        
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Dictionary<string, RollingPointPairList> LoadData(int streamID)
         {
             Dictionary<string, double[]> streamParameters = Globals.limitPCAP[streamID];
@@ -341,6 +341,7 @@ namespace Plot_iNET_X
             }            
             return DataOut;
         }
+
         
         private static void parsePacket(Packet packet)
         {
@@ -512,6 +513,8 @@ namespace Plot_iNET_X
 
 
     }
+
+
 
     public static class getValue
     {

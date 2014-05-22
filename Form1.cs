@@ -18,16 +18,30 @@ namespace Plot_iNET_X
     {
         public selectChannel selChanObj;
         public PlotData GraphPlot;
+        performanceMonitor pmon;
         public Form1()
         {
             InitializeComponent();
-
+            pmon = new performanceMonitor();
+            System.Timers.Timer updateMonitorClock = new System.Timers.Timer(1000);
+            updateMonitorClock.Elapsed += new System.Timers.ElapsedEventHandler(updateMonitor_Tick);
+            updateMonitorClock.Enabled = true;
         }
 
+        private void updateMonitor_Tick(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            backgroundWorker1.RunWorkerAsync();
+        }
         private void button2_Click(object sender, EventArgs e)
         {
             OpenFile("PCAP");
+            this.label3.Text = String.Format("PCAP Name = {0}\n Size = {1} MB", 
+                System.IO.Path.GetFileName(Globals.filePCAP),
+                new System.IO.FileInfo(Globals.filePCAP).Length/1000000);
             OpenFile("limit");
+            this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
+                System.IO.Path.GetFileName(Globals.limitfile),
+                Globals.limitPCAP.Count);//"limits.csv");
             Globals.channelsSelected = new Dictionary<int, List<string>>();
             foreach (int stream in Globals.limitPCAP.Keys)
             {
@@ -37,36 +51,58 @@ namespace Plot_iNET_X
         private void button1_Click(object sender, EventArgs e)
         {
             //GetPacket();
+            //selChanObj = new selectChannel();
+            //ThreadPool.QueueUserWorkItem(new WaitCallback(GetNewGraph));
+
             Thread plot = new Thread(new ThreadStart(GetNewGraph));
             //plot.SetApartmentState(ApartmentState.STA);
             plot.Start();
         }
 
+        private void button3_Click(object sender, EventArgs e)
+        {
+            //OpenFile("PCAP");
+            //this.label3.Text = Globals.filePCAP;
+            OpenFile("XidML");   
 
+        }
+       
+       
         private void GetNewGraph()
         {
-            if (this.checkBox1.Checked)
+            try
             {
-                try
-                {
-                    selChanObj = new selectChannel();
-                    //start new thread to plot the selected channels
-                    foreach (int stream in Globals.channelsSelected.Keys)
-                    {
-                        if (Globals.channelsSelected[stream].Count != 0)
-                        {
-                            GraphPlot = new PlotData(stream);
-                            GraphPlot.SuspendLayout();
-                            GraphPlot.ResumeLayout(false);
-                            GraphPlot.ShowDialog();
+                selChanObj = new selectChannel();
+                
 
-                        }
+                // TODO parallel streams
+                //Parallel.ForEach(Globals.channelsSelected, kvp =>
+                //{
+                //    if (Globals.channelsSelected[kvp.Key].Count != 0)
+                //    {
+                //        GraphPlot = new PlotData(kvp.Key);
+                //        GraphPlot.SuspendLayout();
+                //        GraphPlot.ResumeLayout(false);
+                //        GraphPlot.ShowDialog();
+                //    }
+                //});
+
+
+                foreach (int stream in Globals.channelsSelected.Keys)
+                {
+                    if (Globals.channelsSelected[stream].Count != 0)
+                    {
+                        GraphPlot = new PlotData(stream);
+                        GraphPlot.SuspendLayout();
+                        GraphPlot.ResumeLayout(false);
+                        GraphPlot.ShowDialog();
+
                     }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
             }
         }
         private static void OpenFile(string type)
@@ -78,9 +114,11 @@ namespace Plot_iNET_X
             switch (type)
             {
                 case ("PCAP"):
-                    openFileDialog1.Filter = "Configuration Input (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
+                    openFileDialog1.Title = "Select Packet File";
+                    openFileDialog1.Filter = "Packet Dump File (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
                     break;
                 case ("XidML"):
+                    openFileDialog1.Title = "Select DAS Studio XidML configuration file";
                     openFileDialog1.Filter = "Configuration Input (.xidml)|*.xidml|All Files (*.*)|*.*";
                     break;
                 case ("limit"):
@@ -126,7 +164,8 @@ namespace Plot_iNET_X
                         Globals.filePCAP = openFileDialog1.FileName.ToString();
                         break;
                     case ("limit"):
-                        Globals.limitPCAP = LoadLimitsPCAP(openFileDialog1.FileName.ToString());//"limits.csv");
+                        Globals.limitPCAP = LoadLimitsPCAP(openFileDialog1.FileName.ToString());
+                        Globals.limitfile = openFileDialog1.FileName.ToString();                        
                         break;
                     case ("XidML"):
                         output.Filter = "Configuration Out (.csv)|*.csv|All Files (*.*)|*.*";
@@ -211,6 +250,21 @@ namespace Plot_iNET_X
                 MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\n{1}", limitFile, e.Message));
             }
             return limit;
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            //var val =  (int)GC.GetTotalMemory(true);
+            this.toolStripStatusLabel3.Text = pmon.getIOUsage();
+            //this.toolStripProgressBar1.Value =val; //pmon.getAvailableRAM();
+            var cpu = (int)pmon.getCurrentCpuUsage();
+            if (cpu > 100) cpu = 100;
+            this.BeginInvoke((MethodInvoker)delegate
+            {
+                this.toolStripProgressBar2.Value = cpu;
+            });
+
+
         }
     }
 
@@ -408,5 +462,46 @@ namespace Plot_iNET_X
             this.Close();
             this.Dispose();
         }
+    }
+
+    public class performanceMonitor
+    {
+        System.Diagnostics.PerformanceCounter cpuCounter;
+        System.Diagnostics.PerformanceCounter ioCounter;
+        
+        System.Diagnostics.Process proces; 
+        public performanceMonitor()
+        {
+            proces = System.Diagnostics.Process.GetCurrentProcess();
+            string instanceName = System.IO.Path.GetFileNameWithoutExtension(proces.MainModule.FileName);
+
+            cpuCounter = new System.Diagnostics.PerformanceCounter();
+            
+            cpuCounter.CategoryName = "Process";
+            cpuCounter.CounterName = "% Processor Time";
+            cpuCounter.InstanceName = instanceName;
+
+            ioCounter = new System.Diagnostics.PerformanceCounter();
+            ioCounter.CategoryName = "Process";
+            ioCounter.CounterName = "IO Read Bytes/sec";
+            ioCounter.InstanceName = instanceName;
+            
+            //totalRam = new System.Diagnostics.PerformanceCounter("Memory", "Total Physical Memory");
+            //totalRam = GC.//new System.Diagnostics.PerformanceCounter("Memory", "Total Mbytes");
+
+        }
+        public float getCurrentCpuUsage()
+        {
+            return cpuCounter.NextValue();
+        }
+
+        public string getIOUsage()
+        {
+            var value = (ioCounter.NextValue() / 1000) + " kB/s";// proces.PrivateMemorySize64 / totalRam.RawValue ;// ramCounter.NextValue();
+            return value;// / totalRam.NextValue();
+
+        }
+
+        
     }
 }
