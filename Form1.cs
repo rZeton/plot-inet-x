@@ -34,19 +34,42 @@ namespace Plot_iNET_X
         }
         private void button2_Click(object sender, EventArgs e)
         {
-            OpenFile("PCAP");
-            this.label3.Text = String.Format("PCAP Name = {0}\n Size = {1} MB", 
-                System.IO.Path.GetFileName(Globals.filePCAP),
-                new System.IO.FileInfo(Globals.filePCAP).Length/1000000);
+            if (this.checkBox2.Checked)
+            {
+                OpenFile("PCAP_list");
+                string folder = System.IO.Path.GetDirectoryName(Globals.filePCAP_list[0]);
+                long size = 0;
+            	foreach (string file in Globals.filePCAP_list)
+	            {
+	                // 3.
+	                // Use FileInfo to get length of each file.
+	                System.IO.FileInfo info = new System.IO.FileInfo(file);
+	                size += info.Length;
+	            }
+
+                this.label3.Text = String.Format("{2} pcaps from {0}\n Total Size = {1} MB",
+                folder,
+                size / 1000000,
+                Globals.filePCAP_list.Length);
+            }
+            else
+            {
+                OpenFile("PCAP");
+                this.label3.Text = String.Format("PCAP Name = {0}\n Size = {1} MB",
+                    System.IO.Path.GetFileName(Globals.filePCAP),
+                    new System.IO.FileInfo(Globals.filePCAP).Length / 1000000);
+            }
             OpenFile("limit");
             this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
                 System.IO.Path.GetFileName(Globals.limitfile),
                 Globals.limitPCAP.Count);//"limits.csv");
             Globals.channelsSelected = new Dictionary<int, List<string>>();
+
             foreach (int stream in Globals.limitPCAP.Keys)
             {
                 Globals.channelsSelected[stream] = new List<string>();
             }
+            
         }
         private void button1_Click(object sender, EventArgs e)
         {
@@ -108,11 +131,16 @@ namespace Plot_iNET_X
         private static void OpenFile(string type)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
             SaveFileDialog output = new SaveFileDialog();
             output.CheckFileExists = false;
             // Set filter options and filter index.
             switch (type)
             {
+                case ("PCAP_list"):                    
+                    folderBrowserDialog1.Description = "Select Folder With PCAPs to parse";
+                    //openFileDialog1.Filter = "Packet Dump File (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
+                    break;
                 case ("PCAP"):
                     openFileDialog1.Title = "Select Packet File";
                     openFileDialog1.Filter = "Packet Dump File (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
@@ -152,6 +180,27 @@ namespace Plot_iNET_X
                 //    break;
             }
             if (type == "error") return;
+            if (type == "PCAP_list")
+            {
+                DialogResult folderRes = folderBrowserDialog1.ShowDialog();
+                if (folderRes == DialogResult.OK)
+                {
+                   // string[] files = System.IO.Directory.GetFiles(folderBrowserDialog1.SelectedPath);
+                    
+                    IEnumerable<string> files = System.IO.Directory.EnumerateFiles(folderBrowserDialog1.SelectedPath, "*.*", System.IO.SearchOption.AllDirectories)
+                                .Where(s => s.EndsWith(".pcap") || s.EndsWith(".cap"));
+
+                    Globals.filePCAP_list = new string[files.ToList<string>().Count];
+                    int e = 0;
+                    foreach(string file in files)
+                    {
+                        Globals.filePCAP_list[e] = file;
+                        e++;
+                    }
+                    return;
+                }
+                else return;
+            }
             openFileDialog1.FilterIndex = 1;
             openFileDialog1.Multiselect = false;
             openFileDialog1.Title = "Select " + type;
@@ -243,7 +292,6 @@ namespace Plot_iNET_X
                     }
                 }
                 Globals.streamLength = streamLength;
-
             }
             catch (Exception e)
             {
@@ -258,13 +306,24 @@ namespace Plot_iNET_X
             this.toolStripStatusLabel3.Text = pmon.getIOUsage();
             //this.toolStripProgressBar1.Value =val; //pmon.getAvailableRAM();
             var cpu = (int)pmon.getCurrentCpuUsage();
-            if (cpu > 100) cpu = 100;
+            if (cpu > 100)
+            {
+                cpu = 100;
+                this.toolStripProgressBar2.BackColor = Color.Red;
+            }
             this.BeginInvoke((MethodInvoker)delegate
             {
                 this.toolStripProgressBar2.Value = cpu;
+                if (cpu > 90) this.toolStripProgressBar2.BackColor = Color.OrangeRed;
+                else this.toolStripProgressBar2.BackColor = Color.Green;
             });
 
 
+        }
+
+        private void toolStripStatusLabel5_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
         }
     }
 

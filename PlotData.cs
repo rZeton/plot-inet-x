@@ -29,6 +29,41 @@ namespace Plot_iNET_X
         }
 
 
+        public PlotData(int streamInput, bool isItList)
+        {
+            if (isItList==false) return;
+            Globals.filePCAP = null;
+
+            #region Initialize_Globals
+            streamID = streamInput;
+            streamData = new Dictionary<string, List<double>>();
+            Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.totalErrors = 0;
+            Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.framesReceived = new Dictionary<int, int[]>();
+            Globals.totalFrames = 0;
+            foreach (int stream in Globals.limitPCAP.Keys)
+            {
+                Globals.packetErrors[stream] = new Dictionary<string, uint>(){
+                {"total",0}, //used for all parameters in that stream
+                {"pktLost",0},
+                {"SEQ",0}};
+                Globals.parError[stream] = new Dictionary<string, uint>();
+                Globals.framesReceived[stream] = new int[4] { 0, 0, 0, 0 };
+                foreach (string parName in Globals.limitPCAP[stream].Keys)
+                {
+                    Globals.parError[stream][parName] = 0;
+                }
+            }
+
+            #endregion Initialize_Globals
+
+            InitializeComponent();
+            zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
+            zedGraphControl1.GraphPane.IsFontsScaled = false;
+
+        }
+
         public PlotData(int streamInput)
         {
 #region Initialize_Globals
@@ -143,7 +178,56 @@ namespace Plot_iNET_X
             //CreateGraph(zedGraphControl1, streamID);
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            CreateGraph(zedGraphControl1, LoadData(streamID), streamID);
+            if (Globals.filePCAP ==null)
+            {
+                Dictionary<string, RollingPointPairList> dataToPlot = new Dictionary<string, RollingPointPairList>();
+                bool firstTime = true;
+                foreach( string p in Globals.filePCAP_list)
+                {
+                    Dictionary <string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+                    Dictionary<string, List<double>> previousData = new Dictionary<string, List<double>>();
+                    foreach (string parName in streamData.Keys)
+                    {
+                        previousData[parName] = new List<double>();
+                        previousData[parName] = streamData[parName];
+                    }
+                    LoadData(streamID, p);
+                    foreach(string parName in streamData.Keys)
+                    {
+                        dataPcap_tmp[parName] = streamData[parName].ToArray();          
+                        int len=0;
+                        int previousLen =0;
+                        if (firstTime) len = dataPcap_tmp[parName].Length;
+                        else
+                        {
+                            
+                            previousLen = dataToPlot[parName].Count;
+                            len = previousLen + dataPcap_tmp[parName].Length;
+                        }                         
+                        RollingPointPairList dataTMP = new RollingPointPairList(len);
+                        uint cnt=0;
+                        double[] x = new double[dataPcap_tmp[parName].Length];
+                        double[] y = new double[dataPcap_tmp[parName].Length];                        
+
+                        foreach (double dataItem in dataPcap_tmp[parName])
+                        {
+                            x[cnt] = previousLen + cnt;
+                            y[cnt] = dataItem;                            
+                            cnt++;
+                        }
+                        if (firstTime==false) dataTMP.Add(dataToPlot[parName]);
+                        dataTMP.Add(x, y);
+                        dataToPlot[parName] = null;
+                        dataToPlot[parName] = new RollingPointPairList(dataTMP);
+                        dataToPlot[parName] = dataTMP;
+                    }
+                    
+                    firstTime = false;
+                }
+                CreateGraph(zedGraphControl1, dataToPlot, streamID);
+            }
+                
+            else CreateGraph(zedGraphControl1, LoadData(streamID), streamID);
             // Size the control to fill the form with a margin
             SetSize();
             sw.Stop();
@@ -278,6 +362,71 @@ namespace Plot_iNET_X
 
 
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void  LoadData(int streamID, string pcapfile)
+        //Dictionary<string, RollingPointPairList> LoadData(int streamID, string pcapfile)
+        {
+            Dictionary<string, double[]> streamParameters = Globals.limitPCAP[streamID];
+            streamData.Clear();
+            try
+            {
+                //while (IsFileLocked(new FileInfo(Globals.filePCAP)))
+                //{
+                //    System.Threading.Thread.Sleep(100);
+                //}
+                OfflinePacketDevice selectedDevice = new OfflinePacketDevice(pcapfile);
+
+                PacketCommunicator communicator = selectedDevice.Open(65536,                                  // portion of the packet to capture
+                    // 65536 guarantees that the whole packet will be captured on all the link layers
+                                        PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
+                                        1000);                                  // read timeout
+                communicator.ReceivePackets(0, parsePacket);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+                    pcapfile, e.ToString()));
+            }
+
+            //Dictionary<string, RollingPointPairList> DataOut = new Dictionary<string, RollingPointPairList>();
+            //foreach (string param in streamData.Keys)
+            //{
+
+            //    if (!DataOut.ContainsKey(param))
+            //    {
+            //        DataOut[param] = new RollingPointPairList(streamData[param].Count);
+            //        double[] x = new double[streamData[param].Count];
+            //        double[] y = new double[streamData[param].Count];
+            //        uint cnt = 0;
+            //        foreach (double dataItem in streamData[param])
+            //        {
+            //            x[cnt] = cnt;
+            //            y[cnt] = dataItem;
+            //            cnt++;
+            //        }
+            //        DataOut[param].Add(x, y);
+            //    }
+            //    else
+            //    {
+            //        DataOut[param].Clear();
+            //        DataOut[param] = new RollingPointPairList(streamData[param].Count);
+            //        double[] x = new double[streamData[param].Count];
+            //        double[] y = new double[streamData[param].Count];
+            //        uint cnt = 0;
+            //        foreach (double dataItem in streamData[param])
+            //        {
+            //            x[cnt] = cnt;
+            //            y[cnt] = dataItem;
+            //            cnt++;
+            //        }
+            //        DataOut[param].Add(x, y);
+
+            //    }
+            //    //DataOut[param] = new RollingPointPairList([555]);
+            //    //DataOut[param] = streamData[param].ToArray();
+            //}
+            //return DataOut;
+        }
+
         public static Dictionary<string, RollingPointPairList> LoadData(int streamID)
         {
             Dictionary<string, double[]> streamParameters = Globals.limitPCAP[streamID];
@@ -362,6 +511,7 @@ namespace Plot_iNET_X
                     //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
                     return;
                 }
+                if (frame.Length < Globals.streamLength[stream]) MessageBox.Show(String.Format("{0} -- {1}",frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
                 uint i = 0;
                 uint parPos, parCnt, parOccurences, parPosTmp;
                 double value=0.0;
@@ -450,6 +600,29 @@ namespace Plot_iNET_X
                                 }
                             }
                         }
+                        else if (limit[parName][6]==5) //derrived parameter TODO
+                        {                            
+                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                            {
+                                value = (double)((frame[parPos] << 8) + frame[parPos + 1]);
+                                if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                                {
+                                    // To do - handle error reporting
+                                    /* 
+                                    errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
+                                        Globals.totalErrors,                            //total error count for all streams
+                                        streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
+                                        Globals.parError[streamID][parName],            //error count for parameter
+                                        parName,                                        //parameter name
+                                        value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
+                                        parOccur);
+                                        * */
+                                    Globals.parError[stream][parName] += 1;
+                                    Globals.packetErrors[stream]["total"]++;
+                                    Globals.totalErrors++;
+                                }
+                            }
+                        }
                         else
                         {
                             for (int parOccur = 0; parOccur != parOccurences; parOccur++)
@@ -518,6 +691,13 @@ namespace Plot_iNET_X
 
     public static class getValue
     {
+        public static double GetDerivedParameter(double input, double con, double con2)
+        {
+            //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
+            double value;
+            value = con * input + con2;
+            return value;
+        }
         public static double GetTDCVolt(double input) //finish this later if needed
         {
             double voltage = 0.0;

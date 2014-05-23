@@ -47,6 +47,8 @@
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.toolStripStatusLabel5 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabel6 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -63,7 +65,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(466, 144);
+            this.panel1.Size = new System.Drawing.Size(467, 144);
             this.panel1.TabIndex = 1;
             // 
             // statusStrip1
@@ -73,10 +75,12 @@
             this.toolStripStatusLabel3,
             this.toolStripStatusLabel4,
             this.toolStripStatusLabel2,
-            this.toolStripProgressBar2});
+            this.toolStripProgressBar2,
+            this.toolStripStatusLabel6,
+            this.toolStripStatusLabel5});
             this.statusStrip1.Location = new System.Drawing.Point(0, 122);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(466, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(467, 22);
             this.statusStrip1.TabIndex = 4;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -170,9 +174,9 @@
             this.checkBox2.ForeColor = System.Drawing.SystemColors.ControlText;
             this.checkBox2.Location = new System.Drawing.Point(7, 44);
             this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(64, 17);
+            this.checkBox2.Size = new System.Drawing.Size(82, 17);
             this.checkBox2.TabIndex = 1;
-            this.checkBox2.Text = "option 2";
+            this.checkBox2.Text = "List - TODO";
             this.checkBox2.UseVisualStyleBackColor = true;
             // 
             // checkBox1
@@ -231,12 +235,28 @@
             // 
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
             // 
+            // toolStripStatusLabel5
+            // 
+            this.toolStripStatusLabel5.BackColor = System.Drawing.Color.Red;
+            this.toolStripStatusLabel5.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.toolStripStatusLabel5.ForeColor = System.Drawing.Color.White;
+            this.toolStripStatusLabel5.Name = "toolStripStatusLabel5";
+            this.toolStripStatusLabel5.Size = new System.Drawing.Size(48, 17);
+            this.toolStripStatusLabel5.Text = "Restart";
+            this.toolStripStatusLabel5.Click += new System.EventHandler(this.toolStripStatusLabel5_Click);
+            // 
+            // toolStripStatusLabel6
+            // 
+            this.toolStripStatusLabel6.Name = "toolStripStatusLabel6";
+            this.toolStripStatusLabel6.Size = new System.Drawing.Size(10, 17);
+            this.toolStripStatusLabel6.Text = "|";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(466, 144);
+            this.ClientSize = new System.Drawing.Size(467, 144);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -276,6 +296,8 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         public System.Windows.Forms.ToolStripProgressBar toolStripProgressBar2;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel6;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel5;
 
     }
 }
