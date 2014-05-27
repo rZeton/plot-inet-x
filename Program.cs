@@ -42,14 +42,30 @@ namespace Plot_iNET_X
         public const int inetStart = 0; //0 for udps
 
 
-
+        public static Dictionary<string, limitPCAP_Derrived> limitPCAP_derrived {get;set;}//; //Dictionary<String,double[]>> limitPCAP_derrived {get;set;}
         public static Dictionary<int, Dictionary<string, double[]>> limitPCAP { get; set; }
         public static Dictionary<int, List<string>> channelsSelected { get; set; }
 
         
     }
 
+    public class limitPCAP_Derrived
+    {
+        //limitPCAP_Derrived class to hold data
+        public int streamID   {get;set;}
+        public string srcParameterName {get;set;}
+        public string[] srcParametersName { get; set; }
+        public double const1 {get;set;}
+        public double const2 {get;set;}
+        public double const3 { get; set; }
 
+        public double[] getConstants()
+        {
+            return new double[]{const1, const2};
+        }
+
+
+    }
     #region XidML loading
     public class Configure
     {
@@ -63,7 +79,7 @@ namespace Plot_iNET_X
                 System.IO.FileStream configFilePtr = new System.IO.FileStream(configFile, System.IO.FileMode.Open, System.IO.FileAccess.Read);
                 XmlTextReader reader = new XmlTextReader(configFilePtr);
                 int pktCnt = 0;
-                limitsPtr.WriteLine("Stream ID, Stream #, Stream Rate, Parameter Number, Parameter Offset, Parameter Occurrences, Parameter Name, Parameter Type [0 - analog 1 - bitvector], Range Maximum, Range Minimum, Limit Maximum, Limit Minimum,X");
+                limitsPtr.WriteLine("Stream ID, Stream #, Stream Rate, Parameter Number, Parameter Offset, Parameter Occurrences, Parameter Name, Parameter Type [0 - analog; 1 - bitvector; 5 - derrived], Range Maximum, Range Minimum, Limit Maximum, Limit Minimum,Derrived Source [streamID;ParameterName], Constants [y1;y2], X");
                 string parName = "";
                 double parOffset = 0;
                 double parOccurr = 1;
@@ -97,7 +113,7 @@ namespace Plot_iNET_X
                                     parOccurr = reader.ReadElementContentAsDouble();
                                     List<double> FSR = GetParameterFSR(configFile, parName);
 
-                                    limitsPtr.Write("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{8},{9}\n", streamID, pktCnt, pktRate, parCnt, parOffset, parOccurr, parName, FSR[0], FSR[1], FSR[2]);
+                                    limitsPtr.Write("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{8},{9},,,\n", streamID, pktCnt, pktRate, parCnt, parOffset, parOccurr, parName, FSR[0], FSR[1], FSR[2]);
                                     //Console.WriteLine("Parameter {0}: {1}", parCnt, parName);
                                     parCnt++;
                                     break;

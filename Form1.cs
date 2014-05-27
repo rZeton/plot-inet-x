@@ -115,11 +115,11 @@ namespace Plot_iNET_X
                 {
                     if (Globals.channelsSelected[stream].Count != 0)
                     {
-                        GraphPlot = new PlotData(stream);
-                        GraphPlot.SuspendLayout();
-                        GraphPlot.ResumeLayout(false);
-                        GraphPlot.ShowDialog();
-
+                        //GraphPlot = new PlotData(stream);
+                        //GraphPlot.SuspendLayout();
+                        //GraphPlot.ResumeLayout(false);
+                        //GraphPlot.ShowDialog();
+                        new Thread(() => new PlotData(stream).ShowDialog()).Start();
                     }
                 }
             }
@@ -237,9 +237,10 @@ namespace Plot_iNET_X
             *   KEY Stream No. ==
             *                   ==> KEY Parameter name ====
             *                                             ==> parameter data in array
-            * 
-            * */
+            */
             Dictionary<int, Dictionary<string, double[]>> limit = new Dictionary<int, Dictionary<string, double[]>>();
+            //Dictionary<int,Dictionary<string, double[]>> limitDerrived = new Dictionary<int, Dictionary<string, double[]>>(); 
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = new Dictionary<string, limitPCAP_Derrived>(); 
             Dictionary<int, uint> streamLength = new Dictionary<int, uint>();
             string line = null;
             int lineCnt = 0;
@@ -265,7 +266,7 @@ namespace Plot_iNET_X
                             Convert.ToDouble(parameters[9]),    //8 - Range Minimum 0 = Vector
                             Convert.ToDouble(parameters[10]),    //9 - Limit Maximum	 -- to be added manually
                             Convert.ToDouble(parameters[11]),   //10	- Limit Minimum  -- to be added manually
-                            };
+                        };
                         if (!limit.ContainsKey(Convert.ToInt32(parameters[0])))
                         {
                             limit.Add(Convert.ToInt32(parameters[0]), new Dictionary<string, double[]>(){
@@ -276,9 +277,55 @@ namespace Plot_iNET_X
                         {
                             limit[Convert.ToInt32(parameters[0])][parameters[6]] = data;          //add parameter name with relevant data.                        
                         }
+                        
+
+                        //Derrived parameters handling
+                        if (parameters.Length > 12)
+                        {
+                            if (parameters[12] != "")
+                            {
+                                string parName = parameters[6];
+                                string[] parametersDerrivedName = parameters[12].Split(';');
+                                string[] constantsParams = parameters[13].Split(';');
+                                var streamID = Convert.ToInt32(parametersDerrivedName[0]);
+                                string[] srcParamList = null;
+
+                                limitPCAP_Derrived dataDerrived = new limitPCAP_Derrived();
+                                if (parametersDerrivedName.Length > 2)
+                                {
+                                    srcParamList = new string[parametersDerrivedName.Length - 1];
+                                    for (int i = 1; i != parametersDerrivedName.Length; i++)
+                                    {
+                                        srcParamList[i - 1] = parametersDerrivedName[i];
+                                    }
+                                    dataDerrived.srcParametersName = srcParamList;
+                                }
+                                else
+                                {
+                                    dataDerrived.srcParameterName = parametersDerrivedName[1];
+                                }
+
+                                
+                                dataDerrived.streamID = streamID;    //0 - source Stream ID	
+
+                                dataDerrived.const1 = Convert.ToDouble(constantsParams[0]);       //2 - constant 
+                                dataDerrived.const2 = Convert.ToDouble(constantsParams[1]);       //2 - constant                         
+                                if (constantsParams.Length > 2) dataDerrived.const3 = Convert.ToDouble(constantsParams[2]);
+                                if (!limitDerrived.ContainsKey(parName))
+                                {
+                                    limitDerrived.Add((parName), dataDerrived);
+                                }
+                                else
+                                {
+                                    MessageBox.Show(String.Format("Parameter {0} is duplicated, plese check your config file", parName), "Parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    //limitDerrived[Convert.ToInt32(parameters[0])][parameters[6]] = dataDerrived;          //add parameter name with relevant data.                        
+                                }
+                            }
+                        }
                     }
                     lineCnt++;
                 }
+                Globals.limitPCAP_derrived = limitDerrived;
 
                 foreach (int stream in limit.Keys)
                 {
@@ -295,7 +342,7 @@ namespace Plot_iNET_X
             }
             catch (Exception e)
             {
-                MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\n{1}", limitFile, e.Message));
+                MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\n\nor Possible parsing error - see msg below:\n{1}", limitFile, e.Message));
             }
             return limit;
         }

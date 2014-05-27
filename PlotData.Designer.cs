@@ -56,6 +56,7 @@
             this.zedGraphControl1.ScrollMinY2 = 0D;
             this.zedGraphControl1.Size = new System.Drawing.Size(783, 340);
             this.zedGraphControl1.TabIndex = 0;
+            this.zedGraphControl1.ZoomEvent += new ZedGraph.ZedGraphControl.ZoomEventHandler(this.ZoomEvent);
             // 
             // PlotData
             // 

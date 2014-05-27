@@ -18,17 +18,16 @@ namespace Plot_iNET_X
 {
     public partial class PlotData : Form
     {
-        public double[] xData, yData;
+
         public static int streamID;
         public static byte[] frame =new byte[65536];
         public static Dictionary<string, List<double>> streamData;
+        Dictionary<string, FilteredPointList> dataToPlot;
 
         public PlotData()
         {
             InitializeComponent();
         }
-
-
         public PlotData(int streamInput, bool isItList)
         {
             if (isItList==false) return;
@@ -63,7 +62,6 @@ namespace Plot_iNET_X
             zedGraphControl1.GraphPane.IsFontsScaled = false;
 
         }
-
         public PlotData(int streamInput)
         {
 #region Initialize_Globals
@@ -104,11 +102,30 @@ namespace Plot_iNET_X
         }
         private void SetSize()
         {
+            
+            
             zedGraphControl1.Location = new Point(10, 10);
             // Leave a small margin around the outside of the control
             zedGraphControl1.Size = new Size(ClientRectangle.Width - 20,
-                                    ClientRectangle.Height - 20);            
+                                    ClientRectangle.Height - 20);
+            
+        
         }
+
+        #region ZedGRaph_Menu
+        private void ZoomEvent(ZedGraphControl sender, ZoomState oldState, ZoomState newState)
+        {
+            // The maximum number of point to displayed is based on the width of the graphpane, and the visible range of the X axis
+            foreach(string param in dataToPlot.Keys)
+            {
+                dataToPlot[param].SetBounds(sender.GraphPane.XAxis.Scale.Min, sender.GraphPane.XAxis.Scale.Max, (int)zedGraphControl1.GraphPane.Rect.Width);
+            }                     
+            // This refreshes the graph when the button is released after a panning operation
+            if (newState.Type == ZoomState.StateType.Pan)
+                sender.Invalidate();
+        }
+
+
         private void Add_item_toMenu(ZedGraphControl sender, ContextMenuStrip menuStrip, Point mousePt, ZedGraphControl.ContextMenuObjectState objState)
         {
             foreach (ToolStripMenuItem item in menuStrip.Items)
@@ -133,7 +150,6 @@ namespace Plot_iNET_X
             scroll.Click += new EventHandler(ToggleZoom);
             menuStrip.Items.Add(scroll);            
         }
-
         private void ToggleZoom(object sender, EventArgs e)
         {
             //zedGraphControl1.ZoomButtons = MouseButtons.None;
@@ -162,7 +178,6 @@ namespace Plot_iNET_X
                 //= !zedGraphControl1.IsEnableWheelZoom;
             zedGraphControl1.Refresh();
         }
-
         private void HideLegend(object sender, EventArgs e)
         {
 
@@ -170,68 +185,90 @@ namespace Plot_iNET_X
             //zedGraphControl1.GraphPane.CurveList.Clear();
             zedGraphControl1.Refresh();
         }
-
+        #endregion ZedGRaph_Menu
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Setup the graph
-            //CreateGraph(zedGraphControl1, streamID);
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
             sw.Start();
             if (Globals.filePCAP ==null)
             {
-                Dictionary<string, RollingPointPairList> dataToPlot = new Dictionary<string, RollingPointPairList>();
+                dataToPlot = new Dictionary<string, FilteredPointList>();
                 bool firstTime = true;
                 foreach( string p in Globals.filePCAP_list)
                 {
+                    GC.Collect(GC.MaxGeneration,GCCollectionMode.Forced);
                     Dictionary <string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
-                    Dictionary<string, List<double>> previousData = new Dictionary<string, List<double>>();
-                    foreach (string parName in streamData.Keys)
-                    {
-                        previousData[parName] = new List<double>();
-                        previousData[parName] = streamData[parName];
-                    }
                     LoadData(streamID, p);
+                    
                     foreach(string parName in streamData.Keys)
                     {
                         dataPcap_tmp[parName] = streamData[parName].ToArray();          
-                        int len=0;
+                        //int len=0;
                         int previousLen =0;
-                        if (firstTime) len = dataPcap_tmp[parName].Length;
+                        if (firstTime) previousLen = dataPcap_tmp[parName].Length;
+                        else
+                        {                            
+                            previousLen = dataToPlot[parName].Count;
+                            previousLen = previousLen + dataPcap_tmp[parName].Length;
+                        }                         
+                        //RollingPointPairList dataTMP = new RollingPointPairList(len);
+                        uint cnt=0;
+                        //double[] x = new double[dataPcap_tmp[parName].Length];
+                        //double[] y = new double[dataPcap_tmp[parName].Length];
+                        double[] x = new double[previousLen];
+                        double[] y = new double[previousLen];
+
+                        if (firstTime == false)
+                        {
+                            //dataTMP.Add(dataToPlot[parName]);
+                            for(int i=0; i!=dataToPlot[parName].Count;i++)
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataToPlot[parName][i].Y;
+                                cnt++;
+                            }
+                            //previousLen = x.Length;                            
+                            foreach (double dataItem in dataPcap_tmp[parName])
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataItem;
+                                cnt++;
+                            }
+                        }
                         else
                         {
-                            
-                            previousLen = dataToPlot[parName].Count;
-                            len = previousLen + dataPcap_tmp[parName].Length;
-                        }                         
-                        RollingPointPairList dataTMP = new RollingPointPairList(len);
-                        uint cnt=0;
-                        double[] x = new double[dataPcap_tmp[parName].Length];
-                        double[] y = new double[dataPcap_tmp[parName].Length];                        
-
-                        foreach (double dataItem in dataPcap_tmp[parName])
-                        {
-                            x[cnt] = previousLen + cnt;
-                            y[cnt] = dataItem;                            
-                            cnt++;
+                            foreach (double dataItem in dataPcap_tmp[parName])
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataItem;
+                                cnt++;
+                            }
                         }
-                        if (firstTime==false) dataTMP.Add(dataToPlot[parName]);
-                        dataTMP.Add(x, y);
+
+                        //if (firstTime == false)
+                        //{                            
+                        //    dataTMP.Add(dataToPlot[parName]);
+                        //}
+                        //dataTMP.Add(x, y);
                         dataToPlot[parName] = null;
-                        dataToPlot[parName] = new RollingPointPairList(dataTMP);
-                        dataToPlot[parName] = dataTMP;
-                    }
-                    
+                        dataToPlot[parName] = new FilteredPointList(x,y);
+                        //dataToPlot[parName] = dataTMP;
+                    }                    
                     firstTime = false;
                 }
+                sw2.Start();
                 CreateGraph(zedGraphControl1, dataToPlot, streamID);
+                sw2.Stop();
             }
                 
             else CreateGraph(zedGraphControl1, LoadData(streamID), streamID);
             // Size the control to fill the form with a margin
             SetSize();
             sw.Stop();
-            this.Text=sw.Elapsed.ToString();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            this.Text=String.Format("Total time for parsing ={0} | time to plot={1}",sw.Elapsed.ToString(),sw2.Elapsed.ToString());
         }
         private static void CreateGraph(ZedGraphControl zgc,Dictionary<string, RollingPointPairList> dataToPlot, int streamID)
         {
@@ -268,7 +305,44 @@ namespace Plot_iNET_X
 
             zgc.AxisChange();
         }
+        private static void CreateGraph(ZedGraphControl zgc, Dictionary<string, FilteredPointList> dataToPlot, int streamID)
+        {
+            // get a reference to the GraphPane
+            GraphPane myPane = zgc.GraphPane;
 
+
+            // Set the Titles
+            myPane.Title.Text = String.Format("Stream {0}", streamID);
+            myPane.XAxis.Title.Text = "Time [packet #]";
+            myPane.YAxis.Title.Text = "Value";
+
+            List<Color> allColors = new List<Color>();
+            var colors = getSomeColor.GetStaticPropertyBag(typeof(Color));
+
+            foreach (KeyValuePair<string, object> colorPair in colors)
+            {
+                allColors.Add((Color)colorPair.Value);
+            }
+
+
+            int colCnt = allColors.Count() - 1;
+
+            foreach (string param in dataToPlot.Keys)
+            {
+                LineItem myCurve = myPane.AddCurve(param, dataToPlot[param], getSomeColor.Blend(allColors[colCnt], Color.Black, 30));
+                myCurve.Line.IsOptimizedDraw = true;
+                myCurve.Symbol.IsVisible = false;
+                myCurve.Line.IsAntiAlias = true;
+                colCnt--;
+            }
+
+            myPane.XAxis.MajorGrid.IsVisible = true;
+            myPane.YAxis.MajorGrid.IsVisible = true;
+            // Tell ZedGraph to refigure the
+            // axes since the data have changed
+            //SetBounds(myPane.XAxis.Scale.Min, myPane.XAxis.Scale.Max, (int)zgc.GraphPane.Rect.Width);
+            zgc.AxisChange();
+        }
         private static void CreateGraph(ZedGraphControl zgc, int streamID)
         {
             // get a reference to the GraphPane
@@ -448,7 +522,7 @@ namespace Plot_iNET_X
             catch (Exception e)
             {
                 MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
-                    Globals.filePCAP, e.ToString()));
+                    Globals.filePCAP, e.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             Dictionary<string, RollingPointPairList> DataOut = new Dictionary<string, RollingPointPairList>();
@@ -511,11 +585,13 @@ namespace Plot_iNET_X
                     //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
                     return;
                 }
-                if (frame.Length < Globals.streamLength[stream]) MessageBox.Show(String.Format("{0} -- {1}",frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
+                if (frame.Length < Globals.streamLength[stream]) return;
+                //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
                 uint i = 0;
                 uint parPos, parCnt, parOccurences, parPosTmp;
                 double value=0.0;
                 Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
+                Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
                 foreach (string parName in Globals.channelsSelected[stream])
                 {
                     parPos = (uint)(limit[parName][4]);
@@ -533,7 +609,7 @@ namespace Plot_iNET_X
                             for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                             {
                                 parPosTmp =(uint) (parPos + parOccur * 2);
-                                value = getValue.CalcValue(16, (double)((frame[parPos] << 8) + frame[parPos + 1]), limit[parName][7], limit[parName][8]);
+                                value = getValue.CalcValue(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[parName][7], limit[parName][8]);
                                 if ((value > limit[parName][9]) || (value < limit[parName][10]))
                                 {
                                     // To do - handle error reporting
@@ -600,11 +676,21 @@ namespace Plot_iNET_X
                                 }
                             }
                         }
-                        else if (limit[parName][6]==5) //derrived parameter TODO
-                        {                            
+                        else if (limit[parName][6]==5) //derrived parameter 
+                        {
+                            //string sourceParameter = Globals.limitDerrived[parName][0];
+                            string srcName = limitDerrived[parName].srcParameterName;
+                            uint constNumber = 2;
+                            if (limitDerrived[parName].const3 != null) constNumber = 3;
                             for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                             {
-                                value = (double)((frame[parPos] << 8) + frame[parPos + 1]);
+                                //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
+                                parPosTmp = (uint)(parPos + parOccur * 2);
+                                if (constNumber>2)
+                                    //value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
+                                    value = getValue.GetDerivedParameter((double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
+                                else
+                                    value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2);                                
                                 if ((value > limit[parName][9]) || (value < limit[parName][10]))
                                 {
                                     // To do - handle error reporting
@@ -623,47 +709,61 @@ namespace Plot_iNET_X
                                 }
                             }
                         }
+                        else if (limit[parName][6]==6) //derrived parameter concated
+                        {
+                            string[] srcName = limitDerrived[parName].srcParametersName;
+
+                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                            {
+                                //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
+                                parPosTmp = (uint)(parPos + parOccur * 2);
+                                if (srcName.Length == 2)
+                                {
+                                    var par1Pos = (int)limit[srcName[0]][4] + parOccur*2;
+                                    var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
+                                    var par2Pos = (int)limit[srcName[1]][4] + parOccur * 2;
+                                    var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
+                                    value = getValue.getConcatedParameter(16, value1,value2); 
+                                }
+                                else if (srcName.Length == 4)
+                                {
+                                    var par1Pos = (int)limit[srcName[0]][4] + parOccur * 2;
+                                    var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
+                                    var par2Pos = (int)limit[srcName[1]][4] + parOccur * 2;
+                                    var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
+                                    var par3Pos = (int)limit[srcName[2]][4] + parOccur * 2;
+                                    var value3 = getValue.getConcatedParameter(8, frame[par3Pos], frame[par3Pos + 1]);
+                                    var par4Pos = (int)limit[srcName[3]][4] + parOccur * 2;
+                                    var value4 = getValue.getConcatedParameter(8, frame[par4Pos], frame[par4Pos + 1]);
+                                    var top = getValue.getConcatedParameter(16, value1, value2);
+                                    var bottom = getValue.getConcatedParameter(16, value3, value4);
+                                    
+                                    value = getValue.getConcatedParameter(32, top, bottom);
+                                }
+
+                                //if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                                //{
+                                //    // To do - handle error reporting
+                                //    Globals.parError[stream][parName] += 1;
+                                //    Globals.packetErrors[stream]["total"]++;
+                                //    Globals.totalErrors++;
+                                //}
+
+                            }
+                        }
                         else
                         {
                             for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                             {
-                                parPosTmp = (uint)(parPos + parOccur * 2); 
-                                value = (double)((frame[parPos] << 8) + frame[parPos + 1]);
+                                parPosTmp = (uint)(parPos + parOccur * 2);
+                                value = (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]);
                             } //generate some methods for BCU report etc..
                         } i += 2;
                         streamData[parName].Add(value);
                     }
                 }
-                //    double[] data = new double[]{
-                //        Convert.ToDouble(parameters[0]),    //0 - Stream ID	
-                //        Convert.ToDouble(parameters[1]),    //1 - Packet Number 
-                //        Convert.ToDouble(parameters[2]),    //2 - stream rate in Hz
-                //        Convert.ToDouble(parameters[3]),    //3 - Parameter Number
-                //        Convert.ToDouble(parameters[4]),    //4 - Parameter Offset
-                //        Convert.ToDouble(parameters[5]),    //5 - Parameter Occurences in stream
-                //        Convert.ToDouble(parameters[7]),    //6 - Parameter Type - 0 = Data / 1= BitVector
-                //        Convert.ToDouble(parameters[8]),    //7 - Range Maximum 0 = Vector
-                //        Convert.ToDouble(parameters[9]),    //8 - Range Minimum 0 = Vector
-                //        Convert.ToDouble(parameters[10]),    //9 - Limit Maximum	 -- to be added manually
-                //        Convert.ToDouble(parameters[11]),   //10	- Limit Minimum  -- to be added manually
-                //        };
-                //    if (!limit.ContainsKey(Convert.ToInt16(parameters[0])))
-                //    {
-                //        limit.Add(Convert.ToInt16(parameters[0]), new Dictionary<string, double[]>(){
-                //                                                        {parameters[6], data}   //add parameter name with relevant data.
-                //                                                    });
-                //    }
-                //    else
-                //    {
-                //        limit[Convert.ToInt16(parameters[0])][parameters[6]] = data;          //add parameter name with relevant data.                        
-                //    }
-            //}
             Globals.totalFrames++;
-
         }
-
-
-
         public static bool IsFileLocked(FileInfo file)
         {
             FileStream stream = null;
@@ -686,16 +786,52 @@ namespace Plot_iNET_X
 
 
     }
+    public static class Garbage
+    {
+        
 
-
+    }
+    public static class ErrorReporting
+    {
+        //TO DO
+    }
 
     public static class getValue
     {
-        public static double GetDerivedParameter(double input, double con, double con2)
+        public static long getConcatedParameter(int shift,int srcMSB, int srcLSB)
+        {
+            //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
+            var value = ((long)srcMSB << shift) + srcLSB;
+            return value;
+        }
+
+        public static long getConcatedParameter(int shift, long srcMSB, long srcLSB)
+        {
+            //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
+            var value = ((long)srcMSB << shift) + srcLSB;
+            return value;
+        }
+
+
+        public static double GetDerivedParameter(int bits, double srcInput, double FSRmax, double FSRmin, double con1, double con2)
         {
             //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
             double value;
-            value = con * input + con2;
+            value = con1 * getValue.CalcValue(16, srcInput, FSRmax, FSRmin) + con2;
+            return value;
+        }
+        public static double GetDerivedParameter(double srcInput, double con1, double con2, double con3)
+        {
+            //input of non converted parameter
+            double value;
+            value = (srcInput + con1) * con2 / con3;
+            return value;
+        }
+        public static double GetDerivedParameter(int bits, double srcInput, double FSRmax, double FSRmin, double con1, double con2, double con3)
+        {
+            //-34055)*1200/2777
+            double value;
+            value = ((getValue.CalcValue(16, srcInput, FSRmax, FSRmin)+con1)*con2)/con3;
             return value;
         }
         public static double GetTDCVolt(double input) //finish this later if needed
