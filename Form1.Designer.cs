@@ -35,20 +35,22 @@
             this.toolStripStatusLabel4 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripProgressBar2 = new System.Windows.Forms.ToolStripProgressBar();
+            this.toolStripStatusLabel6 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabel5 = new System.Windows.Forms.ToolStripStatusLabel();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBox4 = new System.Windows.Forms.CheckBox();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.toolStripStatusLabel5 = new System.Windows.Forms.ToolStripStatusLabel();
-            this.toolStripStatusLabel6 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -65,7 +67,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(467, 144);
+            this.panel1.Size = new System.Drawing.Size(467, 210);
             this.panel1.TabIndex = 1;
             // 
             // statusStrip1
@@ -78,7 +80,7 @@
             this.toolStripProgressBar2,
             this.toolStripStatusLabel6,
             this.toolStripStatusLabel5});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 122);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 188);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(467, 22);
             this.statusStrip1.TabIndex = 4;
@@ -116,13 +118,29 @@
             this.toolStripProgressBar2.Size = new System.Drawing.Size(100, 16);
             this.toolStripProgressBar2.Step = 2;
             // 
+            // toolStripStatusLabel6
+            // 
+            this.toolStripStatusLabel6.Name = "toolStripStatusLabel6";
+            this.toolStripStatusLabel6.Size = new System.Drawing.Size(10, 17);
+            this.toolStripStatusLabel6.Text = "|";
+            // 
+            // toolStripStatusLabel5
+            // 
+            this.toolStripStatusLabel5.BackColor = System.Drawing.Color.Red;
+            this.toolStripStatusLabel5.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.toolStripStatusLabel5.ForeColor = System.Drawing.Color.White;
+            this.toolStripStatusLabel5.Name = "toolStripStatusLabel5";
+            this.toolStripStatusLabel5.Size = new System.Drawing.Size(48, 17);
+            this.toolStripStatusLabel5.Text = "Restart";
+            this.toolStripStatusLabel5.Click += new System.EventHandler(this.toolStripStatusLabel5_Click);
+            // 
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Location = new System.Drawing.Point(191, 6);
+            this.groupBox2.Location = new System.Drawing.Point(143, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(272, 115);
+            this.groupBox2.Size = new System.Drawing.Size(320, 115);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Files Selected";
@@ -147,36 +165,48 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.checkBox4);
             this.groupBox1.Controls.Add(this.checkBox3);
             this.groupBox1.Controls.Add(this.checkBox2);
             this.groupBox1.Controls.Add(this.checkBox1);
             this.groupBox1.Location = new System.Drawing.Point(3, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(87, 118);
+            this.groupBox1.Size = new System.Drawing.Size(134, 118);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Settings";
+            // 
+            // checkBox4
+            // 
+            this.checkBox4.AutoSize = true;
+            this.checkBox4.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.checkBox4.Location = new System.Drawing.Point(9, 87);
+            this.checkBox4.Name = "checkBox4";
+            this.checkBox4.Size = new System.Drawing.Size(104, 17);
+            this.checkBox4.TabIndex = 3;
+            this.checkBox4.Text = "option 4 - TODO";
+            this.checkBox4.UseVisualStyleBackColor = true;
             // 
             // checkBox3
             // 
             this.checkBox3.AutoSize = true;
             this.checkBox3.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.checkBox3.Location = new System.Drawing.Point(7, 67);
+            this.checkBox3.Location = new System.Drawing.Point(9, 64);
             this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(64, 17);
+            this.checkBox3.Size = new System.Drawing.Size(104, 17);
             this.checkBox3.TabIndex = 2;
-            this.checkBox3.Text = "option 3";
+            this.checkBox3.Text = "option 3 - TODO";
             this.checkBox3.UseVisualStyleBackColor = true;
             // 
             // checkBox2
             // 
             this.checkBox2.AutoSize = true;
             this.checkBox2.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.checkBox2.Location = new System.Drawing.Point(7, 44);
+            this.checkBox2.Location = new System.Drawing.Point(9, 19);
             this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(82, 17);
+            this.checkBox2.Size = new System.Drawing.Size(84, 17);
             this.checkBox2.TabIndex = 1;
-            this.checkBox2.Text = "List - TODO";
+            this.checkBox2.Text = "Open Folder";
             this.checkBox2.UseVisualStyleBackColor = true;
             // 
             // checkBox1
@@ -184,28 +214,29 @@
             this.checkBox1.AutoSize = true;
             this.checkBox1.Checked = true;
             this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox1.Location = new System.Drawing.Point(7, 20);
+            this.checkBox1.Location = new System.Drawing.Point(9, 41);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(88, 17);
+            this.checkBox1.Size = new System.Drawing.Size(94, 17);
             this.checkBox1.TabIndex = 0;
-            this.checkBox1.Text = "new Window";
+            this.checkBox1.Text = "2 Axis - TODO";
             this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel1
             // 
             this.flowLayoutPanel1.Controls.Add(this.button1);
             this.flowLayoutPanel1.Controls.Add(this.button2);
+            this.flowLayoutPanel1.Controls.Add(this.button4);
             this.flowLayoutPanel1.Controls.Add(this.button3);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(96, 3);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(6, 127);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(92, 118);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(461, 58);
             this.flowLayoutPanel1.TabIndex = 1;
             // 
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(3, 3);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(86, 23);
+            this.button1.Size = new System.Drawing.Size(86, 42);
             this.button1.TabIndex = 0;
             this.button1.Text = "Draw";
             this.button1.UseVisualStyleBackColor = true;
@@ -213,7 +244,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(3, 32);
+            this.button2.Location = new System.Drawing.Point(95, 3);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(86, 42);
             this.button2.TabIndex = 1;
@@ -221,11 +252,21 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(187, 3);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(86, 42);
+            this.button4.TabIndex = 3;
+            this.button4.Text = "Select Config File";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
+            // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(3, 80);
+            this.button3.Location = new System.Drawing.Point(279, 3);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(86, 23);
+            this.button3.Size = new System.Drawing.Size(86, 42);
             this.button3.TabIndex = 2;
             this.button3.Text = "Parse xidml";
             this.button3.UseVisualStyleBackColor = true;
@@ -235,28 +276,12 @@
             // 
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
             // 
-            // toolStripStatusLabel5
-            // 
-            this.toolStripStatusLabel5.BackColor = System.Drawing.Color.Red;
-            this.toolStripStatusLabel5.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.toolStripStatusLabel5.ForeColor = System.Drawing.Color.White;
-            this.toolStripStatusLabel5.Name = "toolStripStatusLabel5";
-            this.toolStripStatusLabel5.Size = new System.Drawing.Size(48, 17);
-            this.toolStripStatusLabel5.Text = "Restart";
-            this.toolStripStatusLabel5.Click += new System.EventHandler(this.toolStripStatusLabel5_Click);
-            // 
-            // toolStripStatusLabel6
-            // 
-            this.toolStripStatusLabel6.Name = "toolStripStatusLabel6";
-            this.toolStripStatusLabel6.Size = new System.Drawing.Size(10, 17);
-            this.toolStripStatusLabel6.Text = "|";
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(467, 144);
+            this.ClientSize = new System.Drawing.Size(467, 210);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -298,6 +323,8 @@
         public System.Windows.Forms.ToolStripProgressBar toolStripProgressBar2;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel6;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel5;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.CheckBox checkBox4;
 
     }
 }

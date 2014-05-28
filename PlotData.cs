@@ -22,46 +22,13 @@ namespace Plot_iNET_X
         public static int streamID;
         public static byte[] frame =new byte[65536];
         public static Dictionary<string, List<double>> streamData;
-        Dictionary<string, FilteredPointList> dataToPlot;
+        public static Dictionary<string, FilteredPointList> dataToPlot;
 
         public PlotData()
         {
             InitializeComponent();
         }
-        public PlotData(int streamInput, bool isItList)
-        {
-            if (isItList==false) return;
-            Globals.filePCAP = null;
 
-            #region Initialize_Globals
-            streamID = streamInput;
-            streamData = new Dictionary<string, List<double>>();
-            Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
-            Globals.totalErrors = 0;
-            Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
-            Globals.framesReceived = new Dictionary<int, int[]>();
-            Globals.totalFrames = 0;
-            foreach (int stream in Globals.limitPCAP.Keys)
-            {
-                Globals.packetErrors[stream] = new Dictionary<string, uint>(){
-                {"total",0}, //used for all parameters in that stream
-                {"pktLost",0},
-                {"SEQ",0}};
-                Globals.parError[stream] = new Dictionary<string, uint>();
-                Globals.framesReceived[stream] = new int[4] { 0, 0, 0, 0 };
-                foreach (string parName in Globals.limitPCAP[stream].Keys)
-                {
-                    Globals.parError[stream][parName] = 0;
-                }
-            }
-
-            #endregion Initialize_Globals
-
-            InitializeComponent();
-            zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
-            zedGraphControl1.GraphPane.IsFontsScaled = false;
-
-        }
         public PlotData(int streamInput)
         {
 #region Initialize_Globals
@@ -97,19 +64,18 @@ namespace Plot_iNET_X
 
         private void Form1_Resize(object sender, EventArgs e)
         {
-
             SetSize();
         }
         private void SetSize()
         {
-            
-            
             zedGraphControl1.Location = new Point(10, 10);
             // Leave a small margin around the outside of the control
             zedGraphControl1.Size = new Size(ClientRectangle.Width - 20,
                                     ClientRectangle.Height - 20);
-            
-        
+            foreach (string par in dataToPlot.Keys)
+            {
+                dataToPlot[par].SetBounds(zedGraphControl1.GraphPane.XAxis.Scale.Min, zedGraphControl1.GraphPane.XAxis.Scale.Max, (int)zedGraphControl1.GraphPane.Rect.Width);
+            }        
         }
 
         #region ZedGRaph_Menu
@@ -192,90 +158,98 @@ namespace Plot_iNET_X
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
             sw.Start();
-            if (Globals.filePCAP ==null)
-            {
-                dataToPlot = new Dictionary<string, FilteredPointList>();
-                bool firstTime = true;
-                foreach( string p in Globals.filePCAP_list)
-                {
-                    GC.Collect(GC.MaxGeneration,GCCollectionMode.Forced);
-                    Dictionary <string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
-                    LoadData(streamID, p);
-                    
-                    foreach(string parName in streamData.Keys)
-                    {
-                        dataPcap_tmp[parName] = streamData[parName].ToArray();          
-                        //int len=0;
-                        int previousLen =0;
-                        if (firstTime) previousLen = dataPcap_tmp[parName].Length;
-                        else
-                        {                            
-                            previousLen = dataToPlot[parName].Count;
-                            previousLen = previousLen + dataPcap_tmp[parName].Length;
-                        }                         
-                        //RollingPointPairList dataTMP = new RollingPointPairList(len);
-                        uint cnt=0;
-                        //double[] x = new double[dataPcap_tmp[parName].Length];
-                        //double[] y = new double[dataPcap_tmp[parName].Length];
-                        double[] x = new double[previousLen];
-                        double[] y = new double[previousLen];
-
-                        if (firstTime == false)
-                        {
-                            //dataTMP.Add(dataToPlot[parName]);
-                            for(int i=0; i!=dataToPlot[parName].Count;i++)
-                            {
-                                x[cnt] = cnt;
-                                y[cnt] = dataToPlot[parName][i].Y;
-                                cnt++;
-                            }
-                            //previousLen = x.Length;                            
-                            foreach (double dataItem in dataPcap_tmp[parName])
-                            {
-                                x[cnt] = cnt;
-                                y[cnt] = dataItem;
-                                cnt++;
-                            }
-                        }
-                        else
-                        {
-                            foreach (double dataItem in dataPcap_tmp[parName])
-                            {
-                                x[cnt] = cnt;
-                                y[cnt] = dataItem;
-                                cnt++;
-                            }
-                        }
-
-                        //if (firstTime == false)
-                        //{                            
-                        //    dataTMP.Add(dataToPlot[parName]);
-                        //}
-                        //dataTMP.Add(x, y);
-                        dataToPlot[parName] = null;
-                        dataToPlot[parName] = new FilteredPointList(x,y);
-                        //dataToPlot[parName] = dataTMP;
-                    }                    
-                    firstTime = false;
-                }
+            dataToPlot = new Dictionary<string, FilteredPointList>();
+            if (Globals.filePCAP == null)
+            {    
                 sw2.Start();
-                CreateGraph(zedGraphControl1, dataToPlot, streamID);
+                iteratePcaps();                
                 sw2.Stop();
+                CreateGraph(zedGraphControl1, dataToPlot, streamID);
             }
-                
-            else CreateGraph(zedGraphControl1, LoadData(streamID), streamID);
-            // Size the control to fill the form with a margin
+            else
+            {
+                Globals.filePCAP_list = new string[1]{Globals.filePCAP};
+                sw2.Start();
+                iteratePcaps();
+                sw2.Stop();
+                CreateGraph(zedGraphControl1, dataToPlot, streamID);
+            }
             SetSize();
             sw.Stop();
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-            this.Text=String.Format("Total time for parsing ={0} | time to plot={1}",sw.Elapsed.ToString(),sw2.Elapsed.ToString());
+            this.Text=String.Format("Total time for parsing ={0} | time to read PCAPs={1}",sw.Elapsed.ToString(),sw2.Elapsed.ToString());          
         }
+        private static void iteratePcaps()
+        {
+            bool firstTime = true;
+            foreach (string p in Globals.filePCAP_list)
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+                LoadData(streamID, p);
+                foreach (string parName in streamData.Keys)
+                {
+                    dataPcap_tmp[parName] = streamData[parName].ToArray();
+                    //int len=0;
+                    int previousLen = 0;
+                    if (firstTime) previousLen = dataPcap_tmp[parName].Length;
+                    else
+                    {
+                        previousLen = dataToPlot[parName].Count;
+                        previousLen = previousLen + dataPcap_tmp[parName].Length;
+                    }
+                    //RollingPointPairList dataTMP = new RollingPointPairList(len);
+                    uint cnt = 0;
+                    //double[] x = new double[dataPcap_tmp[parName].Length];
+                    //double[] y = new double[dataPcap_tmp[parName].Length];
+                    double[] x = new double[previousLen];
+                    double[] y = new double[previousLen];
+
+                    if (firstTime == false)
+                    {
+                        //dataTMP.Add(dataToPlot[parName]);
+                        for (int i = 0; i != dataToPlot[parName].Count; i++)
+                        {
+                            x[cnt] = cnt;
+                            y[cnt] = dataToPlot[parName][i].Y;
+                            cnt++;
+                        }
+                        //previousLen = x.Length;                            
+                        foreach (double dataItem in dataPcap_tmp[parName])
+                        {
+                            x[cnt] = cnt;
+                            y[cnt] = dataItem;
+                            cnt++;
+                        }
+                    }
+                    else
+                    {
+                        foreach (double dataItem in dataPcap_tmp[parName])
+                        {
+                            x[cnt] = cnt;
+                            y[cnt] = dataItem;
+                            cnt++;
+                        }
+                    }
+                    //if (firstTime == false)
+                    //{                            
+                    //    dataTMP.Add(dataToPlot[parName]);
+                    //}
+                    //dataTMP.Add(x, y);
+                    dataToPlot[parName] = null;
+                    dataToPlot[parName] = new FilteredPointList(x, y);
+                    //dataToPlot[parName] = dataTMP;
+                }
+                firstTime = false;                
+            }
+            streamData = null;
+        }
+
+
         private static void CreateGraph(ZedGraphControl zgc,Dictionary<string, RollingPointPairList> dataToPlot, int streamID)
         {
             // get a reference to the GraphPane
             GraphPane myPane = zgc.GraphPane;
-
-
             // Set the Titles
             myPane.Title.Text = String.Format("Stream {0}", streamID);
             myPane.XAxis.Title.Text = "Time [packet #]";
@@ -288,8 +262,6 @@ namespace Plot_iNET_X
             {
                 allColors.Add((Color)colorPair.Value);
             }
-
-
             int colCnt = allColors.Count() - 1;
 
             foreach (string param in dataToPlot.Keys)
@@ -297,13 +269,11 @@ namespace Plot_iNET_X
                 LineItem myCurve = myPane.AddCurve(param, dataToPlot[param], getSomeColor.Blend(allColors[colCnt], Color.Black, 30));
                 colCnt--;
             }
-
             myPane.XAxis.MajorGrid.IsVisible = true;
             myPane.YAxis.MajorGrid.IsVisible = true;
             // Tell ZedGraph to refigure the
             // axes since the data have changed
-
-            zgc.AxisChange();
+            zgc.AxisChange();            
         }
         private static void CreateGraph(ZedGraphControl zgc, Dictionary<string, FilteredPointList> dataToPlot, int streamID)
         {
@@ -339,8 +309,7 @@ namespace Plot_iNET_X
             myPane.XAxis.MajorGrid.IsVisible = true;
             myPane.YAxis.MajorGrid.IsVisible = true;
             // Tell ZedGraph to refigure the
-            // axes since the data have changed
-            //SetBounds(myPane.XAxis.Scale.Min, myPane.XAxis.Scale.Max, (int)zgc.GraphPane.Rect.Width);
+            // axes since the data have changed            
             zgc.AxisChange();
         }
         private static void CreateGraph(ZedGraphControl zgc, int streamID)
@@ -398,7 +367,6 @@ namespace Plot_iNET_X
         {
             // get a reference to the GraphPane
             GraphPane myPane = zgc.GraphPane;
-
             // Set the Titles
             myPane.Title.Text = "Data";
             myPane.XAxis.Title.Text = "Time [packet #]";
@@ -447,58 +415,28 @@ namespace Plot_iNET_X
                 //{
                 //    System.Threading.Thread.Sleep(100);
                 //}
-                OfflinePacketDevice selectedDevice = new OfflinePacketDevice(pcapfile);
-
-                PacketCommunicator communicator = selectedDevice.Open(65536,                                  // portion of the packet to capture
-                    // 65536 guarantees that the whole packet will be captured on all the link layers
-                                        PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
-                                        1000);                                  // read timeout
-                communicator.ReceivePackets(0, parsePacket);
+                //OfflinePacketDevice selectedDevice = new OfflinePacketDevice(pcapfile);
+                //string pcapfileMapped="mapped pcap file";
+                //using (System.IO.MemoryMappedFiles.MemoryMappedFile pcapfileMapped_obj =  System.IO.MemoryMappedFiles.MemoryMappedFile.CreateFromFile(pcapfile, FileMode.Open, pcapfileMapped, 0))//, System.IO.MemoryMappedFiles.MemoryMappedFileAccess.Read))
+                ////pcapfileS = new System.IO.MemoryMappedFiles.MemoryMappedFile();
+                //using (System.IO.MemoryMappedFiles.MemoryMappedViewAccessor pcapFileAccess = pcapfileMapped_obj.CreateViewAccessor())
+                
+                //{
+                    // MemoryMappedViewAccessor pcapFileAccess = pcapfileMapped_obj.CreateViewAccessor();
+                    using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,                                  // portion of the packet to capture
+                        // 65536 guarantees that the whole packet will be captured on all the link layers
+                                            PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
+                                            1000))     // read timeout
+                    {
+                        communicator.ReceivePackets(0, parsePacket);
+                    }
+                //}
             }
             catch (Exception e)
             {
                 MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
                     pcapfile, e.ToString()));
-            }
-
-            //Dictionary<string, RollingPointPairList> DataOut = new Dictionary<string, RollingPointPairList>();
-            //foreach (string param in streamData.Keys)
-            //{
-
-            //    if (!DataOut.ContainsKey(param))
-            //    {
-            //        DataOut[param] = new RollingPointPairList(streamData[param].Count);
-            //        double[] x = new double[streamData[param].Count];
-            //        double[] y = new double[streamData[param].Count];
-            //        uint cnt = 0;
-            //        foreach (double dataItem in streamData[param])
-            //        {
-            //            x[cnt] = cnt;
-            //            y[cnt] = dataItem;
-            //            cnt++;
-            //        }
-            //        DataOut[param].Add(x, y);
-            //    }
-            //    else
-            //    {
-            //        DataOut[param].Clear();
-            //        DataOut[param] = new RollingPointPairList(streamData[param].Count);
-            //        double[] x = new double[streamData[param].Count];
-            //        double[] y = new double[streamData[param].Count];
-            //        uint cnt = 0;
-            //        foreach (double dataItem in streamData[param])
-            //        {
-            //            x[cnt] = cnt;
-            //            y[cnt] = dataItem;
-            //            cnt++;
-            //        }
-            //        DataOut[param].Add(x, y);
-
-            //    }
-            //    //DataOut[param] = new RollingPointPairList([555]);
-            //    //DataOut[param] = streamData[param].ToArray();
-            //}
-            //return DataOut;
+            }            
         }
 
         public static Dictionary<string, RollingPointPairList> LoadData(int streamID)
@@ -786,11 +724,7 @@ namespace Plot_iNET_X
 
 
     }
-    public static class Garbage
-    {
-        
 
-    }
     public static class ErrorReporting
     {
         //TO DO

@@ -48,9 +48,9 @@ namespace Plot_iNET_X
 	            }
 
                 this.label3.Text = String.Format("{2} pcaps from {0}\n Total Size = {1} MB",
-                folder,
-                size / 1000000,
-                Globals.filePCAP_list.Length);
+                                                folder,
+                                                size / 1000000,
+                                                Globals.filePCAP_list.Length);
             }
             else
             {
@@ -60,9 +60,17 @@ namespace Plot_iNET_X
                     new System.IO.FileInfo(Globals.filePCAP).Length / 1000000);
             }
             OpenFile("limit");
-            this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
-                System.IO.Path.GetFileName(Globals.limitfile),
-                Globals.limitPCAP.Count);//"limits.csv");
+            try
+            {
+                this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
+                    System.IO.Path.GetFileName(Globals.limitfile),
+                    Globals.limitPCAP.Count);//"limits.csv");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+    Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             Globals.channelsSelected = new Dictionary<int, List<string>>();
 
             foreach (int stream in Globals.limitPCAP.Keys)
@@ -81,7 +89,6 @@ namespace Plot_iNET_X
             //plot.SetApartmentState(ApartmentState.STA);
             plot.Start();
         }
-
         private void button3_Click(object sender, EventArgs e)
         {
             //OpenFile("PCAP");
@@ -89,7 +96,21 @@ namespace Plot_iNET_X
             OpenFile("XidML");   
 
         }
-       
+        private void button4_Click(object sender, EventArgs e)
+        {
+            OpenFile("limit");
+            try
+            {
+                this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
+                    System.IO.Path.GetFileName(Globals.limitfile),
+                    Globals.limitPCAP.Count);//"limits.csv");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+    Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }       
        
         private void GetNewGraph()
         {
@@ -98,7 +119,7 @@ namespace Plot_iNET_X
                 selChanObj = new selectChannel();
                 
 
-                // TODO parallel streams
+                // TODO parallel streams ?
                 //Parallel.ForEach(Globals.channelsSelected, kvp =>
                 //{
                 //    if (Globals.channelsSelected[kvp.Key].Count != 0)
@@ -119,7 +140,9 @@ namespace Plot_iNET_X
                         //GraphPlot.SuspendLayout();
                         //GraphPlot.ResumeLayout(false);
                         //GraphPlot.ShowDialog();
-                        new Thread(() => new PlotData(stream).ShowDialog()).Start();
+                        Thread t1 = new Thread(() => new PlotData(stream).ShowDialog());
+                        t1.IsBackground = true;
+                        t1.Start();
                     }
                 }
             }
@@ -372,6 +395,8 @@ namespace Plot_iNET_X
         {
             Application.Restart();
         }
+
+
     }
 
     public partial class selectChannel : Form
