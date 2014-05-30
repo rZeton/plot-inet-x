@@ -45,6 +45,8 @@ namespace Plot_iNET_X
         public static Dictionary<string, limitPCAP_Derrived> limitPCAP_derrived {get;set;}//; //Dictionary<String,double[]>> limitPCAP_derrived {get;set;}
         public static Dictionary<int, Dictionary<string, double[]>> limitPCAP { get; set; }
         public static Dictionary<int, List<string>> channelsSelected { get; set; }
+
+        public static double[][][] limitArray { get; set; }
     }
 
     public class limitPCAP_Derrived
@@ -69,7 +71,7 @@ namespace Plot_iNET_X
     public class Configure
     {
 
-        public static Dictionary<int, Dictionary<string, double[]>> LoadLimitsPCAP(string limitFile)
+        public static void LoadLimitsPCAP(string limitFile)
         {
             /*  Structure of Dictionary:
             *   KEY Stream No. ==
@@ -184,7 +186,23 @@ namespace Plot_iNET_X
             {
                 MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\n\nor Possible parsing error - see msg below:\n{1}", limitFile, e.Message));
             }
-            return limit;
+
+
+            Globals.limitArray = new double[limit.Count][][];
+            int streamCnt=0;
+            foreach( int stream in limit.Keys )
+            {                
+                int streampos = (int)limit[stream][limit[stream].Keys.First()][1];
+                Globals.limitArray[streampos] = new double[limit[stream].Count][];
+                int parCnt = 0;
+                foreach (string parName in limit[stream].Keys)
+                {
+                    int position = (int)limit[stream][parName][3];
+                    Globals.limitArray[streamCnt][position] = limit[stream][parName];
+                    parCnt++;
+                }
+                streamCnt++;                
+            }
         }
 
 

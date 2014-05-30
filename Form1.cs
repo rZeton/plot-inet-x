@@ -64,7 +64,7 @@ namespace Plot_iNET_X
             {
                 this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
                     System.IO.Path.GetFileName(Globals.limitfile),
-                    Globals.limitPCAP.Count);//"limits.csv");
+                    Globals.limitArray.Length);//Globals.limitPCAP.Count);//"limits.csv");
             }
             catch (Exception ex)
             {
@@ -73,8 +73,10 @@ namespace Plot_iNET_X
             }
             Globals.channelsSelected = new Dictionary<int, List<string>>();
 
-            foreach (int stream in Globals.limitPCAP.Keys)
+            //foreach (int stream in Globals.limitPCAP.Keys)
+            for (int i=0; i!=Globals.limitArray.Length;i++)
             {
+                int stream = (int)Globals.limitArray[i][0][0];
                 Globals.channelsSelected[stream] = new List<string>();
             }
             
@@ -237,8 +239,14 @@ namespace Plot_iNET_X
                         Globals.filePCAP = openFileDialog1.FileName.ToString();
                         break;
                     case ("limit"):
-                        if (Globals.limitPCAP != null) Globals.limitPCAP.Clear();
+                        if (Globals.limitPCAP != null)
+                        {
+                            Globals.limitPCAP.Clear();
+                            Globals.limitArray = null;
+                        }
                         Globals.limitPCAP = LoadLimitsPCAP(openFileDialog1.FileName.ToString());
+                        Configure.LoadLimitsPCAP(openFileDialog1.FileName.ToString());
+
                         Globals.limitfile = openFileDialog1.FileName.ToString();                        
                         break;
                     case ("XidML"):

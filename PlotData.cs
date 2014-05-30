@@ -214,7 +214,7 @@ public partial class PlotData : Form
         foreach (int e in streamData.Keys) firstTime[e] = true;
         foreach (string p in Globals.filePCAP_list)
         {
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
             //Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
             LoadData(p);
             foreach (int stream in streamData.Keys)
@@ -736,6 +736,8 @@ public partial class PlotData : Form
         Globals.totalFrames++;
     }
 
+
+    //parse method using arrays -- TODO fix other types than analog.
     private static void parsePacket2(Packet packet)
     {
         int stream;
@@ -747,7 +749,7 @@ public partial class PlotData : Form
         {
             frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
             if (frame.Length < 28) return; //check correctness of UDP payload = -1;
-            else stream = ((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
+            else stream = (int)frame.ReadUInt(Globals.inetStart + 4,Endianity.Big);//((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
             if (!streamID.Contains(stream)) //ignore streams not selected
             {
                 //this shall never happen?
@@ -763,20 +765,23 @@ public partial class PlotData : Form
             uint parType = 0;
             double value = 0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
+            int streamCnt = (int)limit[limit.Keys.First()][1];
+            double[][] limitA = new double[Globals.limitArray[0].Length][];
+            limitA = Globals.limitArray[0];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
             foreach (string parName in Globals.channelsSelected[stream])
-            {
-                parPos = (uint)(limit[parName][4]);
+            {                
                 parCnt = (uint)(limit[parName][3]);
-                parOccurences = (uint)(limit[parName][5]);
-                parType = (uint)(limit[parName][6]);
+                parPos = (uint)(limitA[parCnt][4]);
+                parOccurences = (uint)(limitA[parCnt][5]);
+                parType = (uint)(limitA[parCnt][6]);
                 switch (parType)
                 {
                     case 0: //ANALOG
                         for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                         {
-                            value = getValue.CalcValue(16, (double)((frame[parPos] << 8) + frame[++parPos]), limit[parName][7], limit[parName][8]);
-                            if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                            value = getValue.CalcValue(16, (double)((frame[parPos] << 8) + frame[++parPos]), limitA[parCnt][7], limitA[parCnt][8]);
+                            if ((value > limitA[parCnt][9]) || (value < limitA[parCnt][10]))
                             {
                                 // To do - handle error reporting
                                 /* 
@@ -921,8 +926,211 @@ public partial class PlotData : Form
             }
         }
         Globals.totalFrames++;
+    }
+
+
+    //use PTP Time.
+    private static void parsePacketPTP(Packet packet)
+    {
+        int stream;
+        if (packet.Length < 64)
+        {
+            return; //broken packet
+        }
+        if ((packet.Ethernet.EtherType == PcapDotNet.Packets.Ethernet.EthernetType.IpV4) && (packet.Ethernet.IpV4.Udp.Length != 0))
+        {
+            frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
+            if (frame.Length < 28) return; //check correctness of UDP payload = -1;
+            else stream = ((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
+            if (!streamID.Contains(stream)) //ignore streams not selected
+            {
+                //this shall never happen?
+                //Globals.totalErrors++;
+                //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
+                return;
+            }
+            if (frame.Length < Globals.streamLength[stream]) return;
+            //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
+            //getValue.getPTPTime(frame[16])
+            UInt64 PTP1;
+            UInt64 PTP2;
+            PTP1 = frame.ReadUInt(16, Endianity.Big);
+            PTP2 = frame.ReadUInt(20, Endianity.Big);
+
+            MessageBox.Show(String.Format("{0} == {1}",PTP1,PTP2));
+            uint i = 0;
+            uint parPos, parCnt, parOccurences, parPosTmp;
+            uint parType = 0;
+            double value = 0.0;
+            Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
+            int streamCnt = (int)limit[limit.Keys.First()][1];
+            double[][] limitA = new double[Globals.limitArray[0].Length][];
+            limitA = Globals.limitArray[0];
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
+            foreach (string parName in Globals.channelsSelected[stream])
+            {
+                parCnt = (uint)(limit[parName][3]);
+                parPos = (uint)(limitA[parCnt][4]);
+                parOccurences = (uint)(limitA[parCnt][5]);
+                parType = (uint)(limitA[parCnt][6]);
+                switch (parType)
+                {
+                    case 0: //ANALOG
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            value = getValue.CalcValue(16, (double)((frame[parPos] << 8) + frame[++parPos]), limitA[parCnt][7], limitA[parCnt][8]);
+                            if ((value > limitA[parCnt][9]) || (value < limitA[parCnt][10]))
+                            {
+                                // To do - handle error reporting
+                                /* 
+                                errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
+                                    Globals.totalErrors,                            //total error count for all streams
+                                    streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
+                                    Globals.parError[streamID][parName],            //error count for parameter
+                                    parName,                                        //parameter name
+                                    value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
+                                    parOccur);
+                                */
+                                //Globals.parError[stream][parName] += 1;
+                                //Globals.packetErrors[stream]["total"]++;
+                                //Globals.totalErrors++;
+                            }
+                            parPos++;
+                        }
+                        break;
+                    //case 1:                
+                    //    break;
+                    case 2: //BCU Status                    
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            //parPosTmp = (uint)(parPos + parOccur * 2);
+                            value = (double)((frame[parPos] << 8) + frame[++parPos]);
+                            if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                            {
+                                // To do - handle error reporting
+                                /* 
+                                errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
+                                    Globals.totalErrors,                            //total error count for all streams
+                                    streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
+                                    Globals.parError[streamID][parName],            //error count for parameter
+                                    parName,                                        //parameter name
+                                    value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
+                                    parOccur);
+                                    * */
+                                Globals.parError[stream][parName] += 1;
+                                Globals.packetErrors[stream]["total"]++;
+                                Globals.totalErrors++;
+                            }
+                            parPos++;
+                        }
+                        break;
+                    case 3:     //BCD temp - BIT101
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            //parPosTmp = (uint)(parPos + parOccur * 2);
+
+                            value = getValue.CalcValue(16, (double)(getValue.bcd2int((frame[parPos] << 8) + frame[++parPos])), limit[parName][7], limit[parName][8]);
+                            if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                            {
+                                // To do - handle error reporting
+                                /* 
+                                errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
+                                    Globals.totalErrors,                            //total error count for all streams
+                                    streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
+                                    Globals.parError[streamID][parName],            //error count for parameter
+                                    parName,                                        //parameter name
+                                    value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
+                                    parOccur);
+                                    */
+                                Globals.parError[stream][parName] += 1;
+                                Globals.packetErrors[stream]["total"]++;
+                                Globals.totalErrors++;
+                            }
+                            parPos++;
+                        }
+                        break;
+                    case 5: //Derrived parameter - TODO
+                        //string sourceParameter = Globals.limitDerrived[parName][0];
+                        string srcName = limitDerrived[parName].srcParameterName;
+                        uint constNumber = 2;
+                        if (limitDerrived[parName].const3 != null) constNumber = 3;
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
+                            parPosTmp = (uint)(parPos + parOccur * 2);
+                            if (constNumber > 2)
+                                //value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
+                                value = getValue.GetDerivedParameter((double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
+                            else
+                                value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2);
+                            if ((value > limit[parName][9]) || (value < limit[parName][10]))
+                            {
+                                // To do - handle error reporting
+                                /* 
+                                errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
+                                    Globals.totalErrors,                            //total error count for all streams
+                                    streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
+                                    Globals.parError[streamID][parName],            //error count for parameter
+                                    parName,                                        //parameter name
+                                    value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
+                                    parOccur);
+                                    * */
+                                Globals.parError[stream][parName] += 1;
+                                Globals.packetErrors[stream]["total"]++;
+                                Globals.totalErrors++;
+                            }
+                        }
+                        break;
+                    case 6: //Concat --TODO to handle big parameters >16bit
+                        string[] srcName_list = limitDerrived[parName].srcParametersName;
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
+                            parPosTmp = (uint)(parPos + parOccur * 2);
+                            if (srcName_list.Length == 2)
+                            {
+                                var par1Pos = (int)limit[srcName_list[0]][4] + parOccur * 2;
+                                var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
+                                var par2Pos = (int)limit[srcName_list[1]][4] + parOccur * 2;
+                                var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
+                                value = getValue.getConcatedParameter(16, value1, value2);
+                            }
+                            else if (srcName_list.Length == 4)
+                            {
+                                var par1Pos = (int)limit[srcName_list[0]][4] + parOccur * 2;
+                                var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
+                                var par2Pos = (int)limit[srcName_list[1]][4] + parOccur * 2;
+                                var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
+                                var par3Pos = (int)limit[srcName_list[2]][4] + parOccur * 2;
+                                var value3 = getValue.getConcatedParameter(8, frame[par3Pos], frame[par3Pos + 1]);
+                                var par4Pos = (int)limit[srcName_list[3]][4] + parOccur * 2;
+                                var value4 = getValue.getConcatedParameter(8, frame[par4Pos], frame[par4Pos + 1]);
+                                var top = getValue.getConcatedParameter(16, value1, value2);
+                                var bottom = getValue.getConcatedParameter(16, value3, value4);
+                                value = getValue.getConcatedParameter(32, top, bottom);
+                            }
+                        }
+                        break;
+                    default:
+                        for (int parOccur = 0; parOccur != parOccurences; parOccur++)
+                        {
+                            parPosTmp = (uint)(parPos + parOccur * 2);
+                            value = (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]);
+                        }
+                        break;
+                } i += 2;
+
+                streamData[stream][parName].Add(value);
+            }
+        }
+        Globals.totalFrames++;
     }        
-        
+   
+    
+    
+    
+    
+    //Check file access
     public static bool IsFileLocked(FileInfo file)
     {
         FileStream stream = null;
@@ -946,22 +1154,32 @@ public partial class PlotData : Form
 
     }
 
+
+    // TODO - plot or txt report with error counters.
     public static class ErrorReporting
     {
         //TO DO
-
-
     }
 
+
+    //calculation
     public static class getValue
     {
+        public static UInt64 getPTPTime(byte[] input) 
+        {
+            UInt64 value=0;
+            input.ReadUInt48(0,new Endianity());
+            value = BitConverter.ToUInt64(input,0);
+            return value;
+        }
+
+
         public static long getConcatedParameter(int shift,int srcMSB, int srcLSB)
         {
             //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
             var value = ((long)srcMSB << shift) + srcLSB;
             return value;
         }
-
         public static long getConcatedParameter(int shift, long srcMSB, long srcLSB)
         {
             //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
