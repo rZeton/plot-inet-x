@@ -67,7 +67,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(467, 210);
+            this.panel1.Size = new System.Drawing.Size(508, 203);
             this.panel1.TabIndex = 1;
             // 
             // statusStrip1
@@ -80,9 +80,9 @@
             this.toolStripProgressBar2,
             this.toolStripStatusLabel6,
             this.toolStripStatusLabel5});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 188);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 181);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(467, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(508, 22);
             this.statusStrip1.TabIndex = 4;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -138,9 +138,9 @@
             // 
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Location = new System.Drawing.Point(143, 6);
+            this.groupBox2.Location = new System.Drawing.Point(213, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(320, 115);
+            this.groupBox2.Size = new System.Drawing.Size(293, 115);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Files Selected";
@@ -171,7 +171,7 @@
             this.groupBox1.Controls.Add(this.checkBox1);
             this.groupBox1.Location = new System.Drawing.Point(3, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(134, 118);
+            this.groupBox1.Size = new System.Drawing.Size(204, 118);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Settings";
@@ -182,9 +182,9 @@
             this.checkBox4.ForeColor = System.Drawing.SystemColors.ControlText;
             this.checkBox4.Location = new System.Drawing.Point(9, 87);
             this.checkBox4.Name = "checkBox4";
-            this.checkBox4.Size = new System.Drawing.Size(104, 17);
+            this.checkBox4.Size = new System.Drawing.Size(189, 17);
             this.checkBox4.TabIndex = 3;
-            this.checkBox4.Text = "option 4 - TODO";
+            this.checkBox4.Text = "Plot On separate windows - TODO";
             this.checkBox4.UseVisualStyleBackColor = true;
             // 
             // checkBox3
@@ -193,9 +193,9 @@
             this.checkBox3.ForeColor = System.Drawing.SystemColors.ControlText;
             this.checkBox3.Location = new System.Drawing.Point(9, 64);
             this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(104, 17);
+            this.checkBox3.Size = new System.Drawing.Size(132, 17);
             this.checkBox3.TabIndex = 2;
-            this.checkBox3.Text = "option 3 - TODO";
+            this.checkBox3.Text = "Use PTP Time- TODO";
             this.checkBox3.UseVisualStyleBackColor = true;
             // 
             // checkBox2
@@ -208,6 +208,7 @@
             this.checkBox2.TabIndex = 1;
             this.checkBox2.Text = "Open Folder";
             this.checkBox2.UseVisualStyleBackColor = true;
+            this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
             // 
             // checkBox1
             // 
@@ -227,16 +228,16 @@
             this.flowLayoutPanel1.Controls.Add(this.button2);
             this.flowLayoutPanel1.Controls.Add(this.button4);
             this.flowLayoutPanel1.Controls.Add(this.button3);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(6, 127);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 127);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(461, 58);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(503, 49);
             this.flowLayoutPanel1.TabIndex = 1;
             // 
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(3, 3);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(86, 42);
+            this.button1.Size = new System.Drawing.Size(55, 42);
             this.button1.TabIndex = 0;
             this.button1.Text = "Draw";
             this.button1.UseVisualStyleBackColor = true;
@@ -244,7 +245,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(95, 3);
+            this.button2.Location = new System.Drawing.Point(64, 3);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(86, 42);
             this.button2.TabIndex = 1;
@@ -254,7 +255,7 @@
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(187, 3);
+            this.button4.Location = new System.Drawing.Point(156, 3);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(86, 42);
             this.button4.TabIndex = 3;
@@ -264,7 +265,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(279, 3);
+            this.button3.Location = new System.Drawing.Point(248, 3);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(86, 42);
             this.button3.TabIndex = 2;
@@ -281,7 +282,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(467, 210);
+            this.ClientSize = new System.Drawing.Size(508, 203);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;

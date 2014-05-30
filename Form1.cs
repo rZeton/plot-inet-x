@@ -116,8 +116,7 @@ namespace Plot_iNET_X
         {
             try
             {
-                selChanObj = new selectChannel();
-                
+                selChanObj = new selectChannel();               
 
                 // TODO parallel streams ?
                 //Parallel.ForEach(Globals.channelsSelected, kvp =>
@@ -131,20 +130,22 @@ namespace Plot_iNET_X
                 //    }
                 //});
 
-
+                List<int> streamID = new List<int>();
                 foreach (int stream in Globals.channelsSelected.Keys)
-                {
+                {                    
                     if (Globals.channelsSelected[stream].Count != 0)
                     {
+                        streamID.Add(stream);
                         //GraphPlot = new PlotData(stream);
                         //GraphPlot.SuspendLayout();
                         //GraphPlot.ResumeLayout(false);
-                        //GraphPlot.ShowDialog();
-                        Thread t1 = new Thread(() => new PlotData(stream).ShowDialog());
-                        t1.IsBackground = true;
-                        t1.Start();
                     }
                 }
+                //GraphPlot.ShowDialog();
+                Thread t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                t1.Priority = ThreadPriority.Highest;
+                t1.IsBackground = true;
+                t1.Start();
             }
             catch (Exception ex)
             {
@@ -236,6 +237,7 @@ namespace Plot_iNET_X
                         Globals.filePCAP = openFileDialog1.FileName.ToString();
                         break;
                     case ("limit"):
+                        if (Globals.limitPCAP != null) Globals.limitPCAP.Clear();
                         Globals.limitPCAP = LoadLimitsPCAP(openFileDialog1.FileName.ToString());
                         Globals.limitfile = openFileDialog1.FileName.ToString();                        
                         break;
@@ -254,6 +256,8 @@ namespace Plot_iNET_X
             }
             else Globals.limitPCAP = null;
         }
+
+        
         public static Dictionary<int, Dictionary<string, double[]>> LoadLimitsPCAP(string limitFile)
         {
             /*  Structure of Dictionary:
@@ -263,7 +267,7 @@ namespace Plot_iNET_X
             */
             Dictionary<int, Dictionary<string, double[]>> limit = new Dictionary<int, Dictionary<string, double[]>>();
             //Dictionary<int,Dictionary<string, double[]>> limitDerrived = new Dictionary<int, Dictionary<string, double[]>>(); 
-            Dictionary<string, limitPCAP_Derrived> limitDerrived = new Dictionary<string, limitPCAP_Derrived>(); 
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = new Dictionary<string, limitPCAP_Derrived>();
             Dictionary<int, uint> streamLength = new Dictionary<int, uint>();
             string line = null;
             int lineCnt = 0;
@@ -290,24 +294,26 @@ namespace Plot_iNET_X
                             Convert.ToDouble(parameters[10]),    //9 - Limit Maximum	 -- to be added manually
                             Convert.ToDouble(parameters[11]),   //10	- Limit Minimum  -- to be added manually
                         };
-                        if (!limit.ContainsKey(Convert.ToInt32(parameters[0])))
+
+                        int stream = Convert.ToInt32(parameters[0]);
+                        string parName = parameters[6];
+                        if (!limit.ContainsKey(stream))
                         {
-                            limit.Add(Convert.ToInt32(parameters[0]), new Dictionary<string, double[]>(){
-                                                                            {parameters[6], data}   //add parameter name with relevant data.
+                            limit.Add(stream, new Dictionary<string, double[]>(){
+                                                                    {parName, data}   //add parameter name with relevant data.
                                                                         });
                         }
                         else
                         {
-                            limit[Convert.ToInt32(parameters[0])][parameters[6]] = data;          //add parameter name with relevant data.                        
+                            limit[stream][parName] = data;          //add parameter name with relevant data.                        
                         }
-                        
 
                         //Derrived parameters handling
                         if (parameters.Length > 12)
                         {
                             if (parameters[12] != "")
                             {
-                                string parName = parameters[6];
+                                //string parName = parameters[6];
                                 string[] parametersDerrivedName = parameters[12].Split(';');
                                 string[] constantsParams = parameters[13].Split(';');
                                 var streamID = Convert.ToInt32(parametersDerrivedName[0]);
@@ -328,7 +334,7 @@ namespace Plot_iNET_X
                                     dataDerrived.srcParameterName = parametersDerrivedName[1];
                                 }
 
-                                
+
                                 dataDerrived.streamID = streamID;    //0 - source Stream ID	
 
                                 dataDerrived.const1 = Convert.ToDouble(constantsParams[0]);       //2 - constant 
@@ -369,7 +375,6 @@ namespace Plot_iNET_X
             }
             return limit;
         }
-
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
             //var val =  (int)GC.GetTotalMemory(true);
@@ -394,6 +399,11 @@ namespace Plot_iNET_X
         private void toolStripStatusLabel5_Click(object sender, EventArgs e)
         {
             Application.Restart();
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            Globals.filePCAP = null;
         }
 
 

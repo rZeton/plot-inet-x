@@ -41,12 +41,10 @@ namespace Plot_iNET_X
         public static int streamID = -1;
         public const int inetStart = 0; //0 for udps
 
-
+        //Parameter data holders
         public static Dictionary<string, limitPCAP_Derrived> limitPCAP_derrived {get;set;}//; //Dictionary<String,double[]>> limitPCAP_derrived {get;set;}
         public static Dictionary<int, Dictionary<string, double[]>> limitPCAP { get; set; }
         public static Dictionary<int, List<string>> channelsSelected { get; set; }
-
-        
     }
 
     public class limitPCAP_Derrived
@@ -67,8 +65,130 @@ namespace Plot_iNET_X
 
     }
     #region XidML loading
+
     public class Configure
     {
+
+        public static Dictionary<int, Dictionary<string, double[]>> LoadLimitsPCAP(string limitFile)
+        {
+            /*  Structure of Dictionary:
+            *   KEY Stream No. ==
+            *                   ==> KEY Parameter name ====
+            *                                             ==> parameter data in array
+            */
+            Dictionary<int, Dictionary<string, double[]>> limit = new Dictionary<int, Dictionary<string, double[]>>();
+            //Dictionary<int,Dictionary<string, double[]>> limitDerrived = new Dictionary<int, Dictionary<string, double[]>>(); 
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = new Dictionary<string, limitPCAP_Derrived>();
+            Dictionary<int, uint> streamLength = new Dictionary<int, uint>();
+            string line = null;
+            int lineCnt = 0;
+            try
+            {
+                System.IO.StreamReader limitStream = new System.IO.StreamReader(limitFile);
+                while (limitStream.Peek() >= 0)
+                {
+                    line = limitStream.ReadLine();
+                    if (lineCnt != 0) //ignore name line 
+                    //structure of file shall be as follows: Packet #,Stream ID, Stream Rate, Parameter Number,Parameter Offset,Parameter Name,Parameter Type,Range Maximum,Range Minimum,Limit Maximum,Limit Minimum
+                    {
+                        string[] parameters = line.Split(',');  // readline
+                        double[] data = new double[]{
+                            Convert.ToDouble(parameters[0]),    //0 - Stream ID	
+                            Convert.ToDouble(parameters[1]),    //1 - Packet Number 
+                            Convert.ToDouble(parameters[2]),    //2 - stream rate in Hz
+                            Convert.ToDouble(parameters[3]),    //3 - Parameter Number
+	                        Convert.ToDouble(parameters[4]),    //4 - Parameter Offset
+                            Convert.ToDouble(parameters[5]),    //5 - Parameter Occurences in stream
+                            Convert.ToDouble(parameters[7]),    //6 - Parameter Type - 0 = Data / 1= BitVector
+                            Convert.ToDouble(parameters[8]),    //7 - Range Maximum 0 = Vector
+                            Convert.ToDouble(parameters[9]),    //8 - Range Minimum 0 = Vector
+                            Convert.ToDouble(parameters[10]),    //9 - Limit Maximum	 -- to be added manually
+                            Convert.ToDouble(parameters[11]),   //10	- Limit Minimum  -- to be added manually
+                        };
+
+                        int stream = Convert.ToInt32(parameters[0]);
+                        string parName = parameters[6];
+                        if (!limit.ContainsKey(stream))
+                        {
+                            limit.Add(stream, new Dictionary<string, double[]>(){
+                                                                    {parName, data}   //add parameter name with relevant data.
+                                                                        });
+                        }
+                        else
+                        {
+                            limit[stream][parName] = data;          //add parameter name with relevant data.                        
+                        }
+
+                        //Derrived parameters handling
+                        if (parameters.Length > 12)
+                        {
+                            if (parameters[12] != "")
+                            {
+                                //string parName = parameters[6];
+                                string[] parametersDerrivedName = parameters[12].Split(';');
+                                string[] constantsParams = parameters[13].Split(';');
+                                var streamID = Convert.ToInt32(parametersDerrivedName[0]);
+                                string[] srcParamList = null;
+
+                                limitPCAP_Derrived dataDerrived = new limitPCAP_Derrived();
+                                if (parametersDerrivedName.Length > 2)
+                                {
+                                    srcParamList = new string[parametersDerrivedName.Length - 1];
+                                    for (int i = 1; i != parametersDerrivedName.Length; i++)
+                                    {
+                                        srcParamList[i - 1] = parametersDerrivedName[i];
+                                    }
+                                    dataDerrived.srcParametersName = srcParamList;
+                                }
+                                else
+                                {
+                                    dataDerrived.srcParameterName = parametersDerrivedName[1];
+                                }
+
+
+                                dataDerrived.streamID = streamID;    //0 - source Stream ID	
+
+                                dataDerrived.const1 = Convert.ToDouble(constantsParams[0]);       //2 - constant 
+                                dataDerrived.const2 = Convert.ToDouble(constantsParams[1]);       //2 - constant                         
+                                if (constantsParams.Length > 2) dataDerrived.const3 = Convert.ToDouble(constantsParams[2]);
+                                if (!limitDerrived.ContainsKey(parName))
+                                {
+                                    limitDerrived.Add((parName), dataDerrived);
+                                }
+                                else
+                                {
+                                    MessageBox.Show(String.Format("Parameter {0} is duplicated, plese check your config file", parName), "Parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    //limitDerrived[Convert.ToInt32(parameters[0])][parameters[6]] = dataDerrived;          //add parameter name with relevant data.                        
+                                }
+                            }
+                        }
+                    }
+                    lineCnt++;
+                }
+                Globals.limitPCAP_derrived = limitDerrived;
+
+                foreach (int stream in limit.Keys)
+                {
+                    streamLength[stream] = 0;
+                    foreach (string par in limit[stream].Keys)
+                    {
+                        if (limit[stream][par][4] > streamLength[stream])
+                        {
+                            streamLength[stream] = (uint)(limit[stream][par][4] + (uint)limit[stream][par][5] * 2);
+                        }
+                    }
+                }
+                Globals.streamLength = streamLength;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\n\nor Possible parsing error - see msg below:\n{1}", limitFile, e.Message));
+            }
+            return limit;
+        }
+
+
+
         public static void SaveLimits(string configFile, string limitsFile)
         {
             System.IO.StreamWriter limitsPtr = new System.IO.StreamWriter(limitsFile);
