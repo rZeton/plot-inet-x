@@ -11,8 +11,11 @@ using System.Reflection;
 using System.IO;
 using PcapDotNet.Core;
 using PcapDotNet.Packets;
+using Plot_iNET_X.Analyser_Logic;
+
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Plot_iNET_X
 {
@@ -205,7 +208,14 @@ public partial class PlotData : Form
         SetSize();
         sw.Stop();
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-        this.Text=String.Format("Total time for parsing ={0} | time to read PCAPs={1}",sw.Elapsed.ToString(),sw2.Elapsed.ToString());          
+        if (Globals.showErrorSummary)
+        {
+            Thread logWindow = new Thread(() => new ErrorSummaryWindow().ShowDialog());
+            logWindow.Priority = ThreadPriority.BelowNormal;
+            logWindow.IsBackground = true;
+            logWindow.Start();
+        }
+        this.Text = String.Format("Total time for parsing ={0} | time to read PCAPs={1}", sw.Elapsed.ToString(), sw2.Elapsed.ToString());          
     }
 
     private static void iteratePcaps()
@@ -453,7 +463,7 @@ public partial class PlotData : Form
     //Dictionary<string, RollingPointPairList> LoadData(int streamID, string pcapfile)
     {
         Dictionary<int, Dictionary<string, double[]>> streamParameters = Globals.limitPCAP;
-        //streamData.Clear();
+        //streamData.Clear();  
         try
         {
             //while (IsFileLocked(new FileInfo(Globals.filePCAP)))
@@ -473,7 +483,7 @@ public partial class PlotData : Form
                                         PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
                                         1000))     // read timeout
                 {
-                    communicator.ReceivePackets(0, parsePacket2);
+                    communicator.ReceivePackets(0,parsePacket2);
                 }
             //}
         }
@@ -826,7 +836,7 @@ public partial class PlotData : Form
                             parPos++;
                         }
                         break;
-                    case 3:     //BCD temp - BIT101
+                    case 3:     //BCD temp - BIT101 -- units does not seem correct -- TOFIX
                         for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                         {
                             //parPosTmp = (uint)(parPos + parOccur * 2);
@@ -862,9 +872,9 @@ public partial class PlotData : Form
                             parPosTmp = (uint)(parPos + parOccur * 2);
                             if (constNumber > 2)
                                 //value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
-                                value = getValue.GetDerivedParameter((double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
+                                value = getValue.GetDerivedParameter((double)((frame[parPos] << 8) + frame[++parPos]), limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
                             else
-                                value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2);
+                                value = getValue.GetDerivedParameter(16, (double)((frame[parPos] << 8) + frame[++parPos]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2);
                             if ((value > limit[parName][9]) || (value < limit[parName][10]))
                             {
                                 // To do - handle error reporting
@@ -881,6 +891,7 @@ public partial class PlotData : Form
                                 Globals.packetErrors[stream]["total"]++;
                                 Globals.totalErrors++;
                             }
+                            parPos++;
                         }
                         break;
                     case 6: //Concat --TODO to handle big parameters >16bit
@@ -1150,81 +1161,7 @@ public partial class PlotData : Form
         }
         return false;
     }
-
-
-    }
-
-
-    // TODO - plot or txt report with error counters.
-    public static class ErrorReporting
-    {
-        //TO DO
-    }
-
-
-    //calculation
-    public static class getValue
-    {
-        public static UInt64 getPTPTime(byte[] input) 
-        {
-            UInt64 value=0;
-            input.ReadUInt48(0,new Endianity());
-            value = BitConverter.ToUInt64(input,0);
-            return value;
-        }
-
-
-        public static long getConcatedParameter(int shift,int srcMSB, int srcLSB)
-        {
-            //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
-            var value = ((long)srcMSB << shift) + srcLSB;
-            return value;
-        }
-        public static long getConcatedParameter(int shift, long srcMSB, long srcLSB)
-        {
-            //value = Convert.ToInt64(String.Format("{0}{1}", srcMSB, srcLSB));
-            var value = ((long)srcMSB << shift) + srcLSB;
-            return value;
-        }
-
-
-        public static double GetDerivedParameter(int bits, double srcInput, double FSRmax, double FSRmin, double con1, double con2)
-        {
-            //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
-            double value;
-            value = con1 * getValue.CalcValue(16, srcInput, FSRmax, FSRmin) + con2;
-            return value;
-        }
-        public static double GetDerivedParameter(double srcInput, double con1, double con2, double con3)
-        {
-            //input of non converted parameter
-            double value;
-            value = (srcInput + con1) * con2 / con3;
-            return value;
-        }
-        public static double GetDerivedParameter(int bits, double srcInput, double FSRmax, double FSRmin, double con1, double con2, double con3)
-        {
-            //-34055)*1200/2777
-            double value;
-            value = ((getValue.CalcValue(16, srcInput, FSRmax, FSRmin)+con1)*con2)/con3;
-            return value;
-        }
-        public static double GetTDCVolt(double input) //finish this later if needed
-        {
-            double voltage = 0.0;
-            return voltage;
-        }
-        public static double CalcValue(int bits, double input, double FSRmax, double FSRmin)
-        {
-            double result = input * (FSRmax - FSRmin) / (Math.Pow(2, bits) - 1) + FSRmin;
-            return result;
-        }
-        public static int bcd2int(int bcd)
-        {
-            return int.Parse(bcd.ToString("X"));
-        }
-    }
-
+}    
     public static class getSomeColor
     {
         public static Dictionary<string, object> GetStaticPropertyBag(Type t)

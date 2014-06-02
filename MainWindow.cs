@@ -11,29 +11,58 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ZedGraph;
+using Plot_iNET_X.Analyser_Logic;
 
 namespace Plot_iNET_X
 {
-    public partial class Form1 : Form
+
+   
+    public partial class MainWindow : Form
     {
         public selectChannel selChanObj;
         public PlotData GraphPlot;
         performanceMonitor pmon;
-        public Form1()
-        {
+        private LogWindow _logWindow;
+
+
+        public MainWindow()
+        {            
             InitializeComponent();
             pmon = new performanceMonitor();
-            System.Timers.Timer updateMonitorClock = new System.Timers.Timer(1000);
+            System.Timers.Timer updateMonitorClock = new System.Timers.Timer(2000);
             updateMonitorClock.Elapsed += new System.Timers.ElapsedEventHandler(updateMonitor_Tick);
             updateMonitorClock.Enabled = true;
+
+            Globals.streamMsg = new StringBuilder(String.Format("Started at: {0}\n",DateTime.Now));
+            Globals.errorMsg = new StringBuilder();
+
+            _logWindow = new LogWindow();
+            Thread logWindow = new Thread(() => _logWindow.ShowDialog());
+            //Thread logWindow = new Thread(() => new ErrorSummaryWindow().ShowDialog());
+            logWindow.Priority = ThreadPriority.BelowNormal;
+            logWindow.IsBackground = true;
+            logWindow.Start();
         }
 
-        private void updateMonitor_Tick(object sender, System.Timers.ElapsedEventArgs e)
+        //Form Settings handlers
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            backgroundWorker1.RunWorkerAsync();
+            Globals.filePCAP = null;
         }
+        private void checkBox5_CheckedChanged(object sender, EventArgs e)
+        {
+            Globals.showErrorSummary = !Globals.showErrorSummary;
+        }
+        private void checkBox3_CheckedChanged(object sender, EventArgs e)
+        {
+            Globals.usePTP = !Globals.usePTP;
+        }
+
+        
+        //GUI Events
         private void button2_Click(object sender, EventArgs e)
         {
+            this.button1.Visible = true;
             if (this.checkBox2.Checked)
             {
                 OpenFile("PCAP_list");
@@ -110,10 +139,16 @@ namespace Plot_iNET_X
             catch (Exception ex)
             {
                 MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
-    Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }       
-       
+        }
+
+        private void toolStripStatusLabel5_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
+        }
+
+
         private void GetNewGraph()
         {
             try
@@ -154,6 +189,8 @@ namespace Plot_iNET_X
                 MessageBox.Show(ex.ToString());
             }
         }
+
+
         private static void OpenFile(string type)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
@@ -383,39 +420,60 @@ namespace Plot_iNET_X
             }
             return limit;
         }
+ 
+        //handle CPU and Disk Usage
+        private void updateMonitor_Tick(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (backgroundWorker1.IsBusy) return;
+            backgroundWorker1.RunWorkerAsync();
+        }
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
             //var val =  (int)GC.GetTotalMemory(true);
             this.toolStripStatusLabel3.Text = pmon.getIOUsage();
             //this.toolStripProgressBar1.Value =val; //pmon.getAvailableRAM();
             var cpu = (int)pmon.getCurrentCpuUsage();
+            Color colorCPU;
             if (cpu > 100)
             {
-                cpu = 100;
-                this.toolStripProgressBar2.BackColor = Color.Red;
+                cpu = 100;     
+                colorCPU = Color.Red;
             }
+            else if(cpu>90)
+            { colorCPU = Color.OrangeRed;}
+            else colorCPU= Color.Green;
+            
             this.BeginInvoke((MethodInvoker)delegate
             {
                 this.toolStripProgressBar2.Value = cpu;
-                if (cpu > 90) this.toolStripProgressBar2.BackColor = Color.OrangeRed;
-                else this.toolStripProgressBar2.BackColor = Color.Green;
+                this.toolStripProgressBar2.ToolTipText=cpu.ToString();
+
+                //this.toolStripProgressBar2.BackColor = colorCPU;
+                this.toolStripProgressBar2.ForeColor = colorCPU;                
             });
 
 
         }
 
-        private void toolStripStatusLabel5_Click(object sender, EventArgs e)
+        private void toolStripStatusLabel8_Click(object sender, EventArgs e)
         {
-            Application.Restart();
+            if (_logWindow.WindowState==FormWindowState.Minimized)
+            {
+                _logWindow.WindowState = FormWindowState.Normal;
+                _logWindow.Show();
+                _logWindow.Focus();
+                _logWindow.Invoke(new MethodInvoker(_logWindow.RestartTimer));
+            }
+            else
+            {
+                _logWindow.Invoke(new MethodInvoker(_logWindow.HideLog));
+            }
         }
 
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
-        {
-            Globals.filePCAP = null;
-        }
 
 
-    }
+
+   }
 
     public partial class selectChannel : Form
     {

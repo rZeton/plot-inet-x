@@ -22,8 +22,8 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <ApplicationRevision>7</ApplicationRevision>
-    <ApplicationVersion>0.0.1.%2a</ApplicationVersion>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>0.0.5.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
@@ -77,16 +77,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PcapDotNet.Base">
-      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Base.dll</HintPath>
+      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Base.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Core">
-      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Core.dll</HintPath>
+      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Core.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Core.Extensions">
-      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Core.Extensions.dll</HintPath>
+      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Core.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Packets">
-      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Packets.dll</HintPath>
+      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Packets.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -99,15 +99,31 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="ZedGraph">
-      <HintPath>..\..\DrawGraph\lib\zedGraph\ZedGraph.dll</HintPath>
+      <HintPath>..\..\_C#_libaries\zedgraph_dll_v515\zedgraph_dll_v5.1.5\ZedGraph.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form1.cs">
+    <Compile Include="Analyser_Logic\Error_Reporting.cs" />
+    <Compile Include="Analyser_Logic\getValue.cs" />
+    <Compile Include="Analyser_Logic\PacketParser.cs" />
+    <Compile Include="Analyser_Logic\Xidml_Tools.cs" />
+    <Compile Include="ErrorSummaryWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="ErrorSummaryWindow.Designer.cs">
+      <DependentUpon>ErrorSummaryWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LogWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LogWindow.Designer.cs">
+      <DependentUpon>LogWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MainWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainWindow.Designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="PlotData.cs">
       <SubType>Form</SubType>
@@ -117,8 +133,15 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Include="ErrorSummaryWindow.resx">
+      <DependentUpon>ErrorSummaryWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LogWindow.resx">
+      <DependentUpon>LogWindow.cs</DependentUpon>
+      <LastGenOutput>LogWindow1.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainWindow.resx">
+      <DependentUpon>MainWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PlotData.resx">
       <DependentUpon>PlotData.cs</DependentUpon>
