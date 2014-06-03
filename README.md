@@ -12,7 +12,7 @@ TODO:
 - plot on separate plots in same window
 - plot on separate windows
 - parallel parsing (multiple files or parameters at the same time)
-- 
+- Cancel button to stop parsing and plot whatever was loaded
 
 Using
 -----------
