@@ -75,18 +75,35 @@ namespace Plot_iNET_X
 	                System.IO.FileInfo info = new System.IO.FileInfo(file);
 	                size += info.Length;
 	            }
-
-                this.label3.Text = String.Format("{2} pcaps from {0}\n Total Size = {1} MB",
-                                                folder,
-                                                size / 1000000,
-                                                Globals.filePCAP_list.Length);
+                Globals.fileSize = (UInt32) (size / 1000000); //get MBs
+                try
+                {
+                    this.label3.Text = String.Format("{2} pcaps from {0}\n Total Size = {1} MB",
+                                                    folder,
+                                                    Globals.fileSize,
+                                                    Globals.filePCAP_list.Length);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(String.Format("Cannot open {0} ,please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+                    Globals.filePCAP_list, ex.ToString()), "PCAP selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             else
             {
                 OpenFile("PCAP");
-                this.label3.Text = String.Format("PCAP Name = {0}\n Size = {1} MB",
-                    System.IO.Path.GetFileName(Globals.filePCAP),
-                    new System.IO.FileInfo(Globals.filePCAP).Length / 1000000);
+                try
+                {
+                    Globals.fileSize = (UInt32)(new System.IO.FileInfo(Globals.filePCAP).Length / 1000000);
+                    this.label3.Text = String.Format("PCAP Name = {0}\n Size = {1} MB",
+                        System.IO.Path.GetFileName(Globals.filePCAP),
+                        Globals.fileSize);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(String.Format("Cannot open {0} ,please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+                    Globals.filePCAP, ex.ToString()), "PCAP selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             OpenFile("limit");
             try
@@ -98,7 +115,7 @@ namespace Plot_iNET_X
             catch (Exception ex)
             {
                 MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
-    Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             Globals.channelsSelected = new Dictionary<int, List<string>>();
 
@@ -108,6 +125,10 @@ namespace Plot_iNET_X
                 int stream = (int)Globals.limitArray[i][0][0];
                 Globals.channelsSelected[stream] = new List<string>();
             }
+            flowLayoutPanel1.SuspendLayout();
+            flowLayoutPanel1.ResumeLayout(false);
+            this.SuspendLayout();
+            this.ResumeLayout(false);
             
         }
         private void button1_Click(object sender, EventArgs e)
@@ -142,18 +163,38 @@ namespace Plot_iNET_X
                 Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        private void button5_Click(object sender, EventArgs e)
+        {
+            OpenFile("Dump_folder");
+        }
 
         private void toolStripStatusLabel5_Click(object sender, EventArgs e)
         {
             Application.Restart();
         }
-
+        private void toolStripStatusLabel8_Click(object sender, EventArgs e)
+        {
+            if (_logWindow.WindowState == FormWindowState.Minimized)
+            {
+                Invoke(new Action(() => { _logWindow.WindowState = FormWindowState.Normal; }));
+                //_logWindow.WindowState = FormWindowState.Normal;
+                Invoke(new Action(() => { _logWindow.Show(); }));
+                //_logWindow.Focus();
+                _logWindow.Invoke(new MethodInvoker(_logWindow.RestartTimer));
+            }
+            else
+            {
+                _logWindow.Invoke(new MethodInvoker(_logWindow.HideLog));
+            }
+        }
 
         private void GetNewGraph()
         {
             try
             {
-                selChanObj = new selectChannel();               
+
+                selChanObj = new selectChannel();
+                //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 
                 // TODO parallel streams ?
                 //Parallel.ForEach(Globals.channelsSelected, kvp =>
@@ -200,6 +241,9 @@ namespace Plot_iNET_X
             // Set filter options and filter index.
             switch (type)
             {
+                case ("Dump_folder"):
+                    folderBrowserDialog1.Description = "Select Folder to Dump Temporary data";
+                    break;
                 case ("PCAP_list"):                    
                     folderBrowserDialog1.Description = "Select Folder With PCAPs to parse";
                     //openFileDialog1.Filter = "Packet Dump File (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
@@ -243,6 +287,26 @@ namespace Plot_iNET_X
                 //    break;
             }
             if (type == "error") return;
+            if (type == "Dump_folder")
+            {                
+                DialogResult folderRes = folderBrowserDialog1.ShowDialog();
+                if (folderRes == DialogResult.OK)
+                {
+                    MessageBox.Show(String.Format("This Location {0} will be cleared now.\n SAVE DATA NOW !!! \n Press OK to continue.",
+                        folderBrowserDialog1.SelectedPath),
+                        "Temp Folder Erase", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    IEnumerable<string> files = System.IO.Directory.EnumerateFiles(folderBrowserDialog1.SelectedPath, "*.*", System.IO.SearchOption.AllDirectories)
+                                    .Where(s => s.EndsWith(".dat") || s.EndsWith(".tmp"));
+
+                    foreach (string file in files)
+                    {
+                        new System.IO.FileInfo(file).Delete();
+                    }
+                    Globals.fileDump = folderBrowserDialog1.SelectedPath;
+                    return;
+                }
+                else return;
+            }
             if (type == "PCAP_list")
             {
                 DialogResult folderRes = folderBrowserDialog1.ShowDialog();
@@ -454,25 +518,6 @@ namespace Plot_iNET_X
 
 
         }
-
-        private void toolStripStatusLabel8_Click(object sender, EventArgs e)
-        {
-            if (_logWindow.WindowState==FormWindowState.Minimized)
-            {
-                _logWindow.WindowState = FormWindowState.Normal;
-                _logWindow.Show();
-                _logWindow.Focus();
-                _logWindow.Invoke(new MethodInvoker(_logWindow.RestartTimer));
-            }
-            else
-            {
-                _logWindow.Invoke(new MethodInvoker(_logWindow.HideLog));
-            }
-        }
-
-
-
-
    }
 
     public partial class selectChannel : Form

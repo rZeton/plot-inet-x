@@ -16,17 +16,23 @@ namespace Plot_iNET_X
         System.Timers.Timer updateGuiTimer;
         public LogWindow()
         {
-            InitializeComponent();
+            InitializeComponent();            
             this.Resize += LogWindow_Resize;
+            this.SuspendLayout();
+            this.ResumeLayout(false);
         }
 
         private void LogWindow_Resize(object sender, EventArgs e)
         {
             MinimizeMe();
+            this.SuspendLayout();
+            this.ResumeLayout(false);
         }
 
         private void updateGUI_tick(object sender, System.Timers.ElapsedEventArgs e)
         {
+            if (Globals.errorMsg.Length == 0) return;
+            if (Globals.streamMsg.Length == 0) return;
             if (backgroundWorker1.IsBusy) return;
             backgroundWorker1.RunWorkerAsync();
         }
@@ -52,6 +58,7 @@ namespace Plot_iNET_X
         }
         public void RestartTimer()
         {
+            this.Show();
             this.Visible = true;
             updateGuiTimer.Start();
         }
@@ -76,7 +83,7 @@ namespace Plot_iNET_X
             {                
                 this.notifyIcon1.Visible = true;
                 this.notifyIcon1.ShowBalloonTip(500);
-                this.Hide();
+                //this.Hide();
             }
 
             else if (FormWindowState.Normal == this.WindowState)
@@ -86,7 +93,7 @@ namespace Plot_iNET_X
         }
         private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            this.ShowDialog();
+            this.Show();
             this.WindowState = FormWindowState.Normal;
             notifyIcon1.Visible = false;
         }        

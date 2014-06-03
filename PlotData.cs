@@ -187,7 +187,12 @@ public partial class PlotData : Form
         if (Globals.filePCAP == null)
         {    
             sw2.Start();
-            iteratePcaps();                
+            if (Globals.fileSize > 1000) //save items to file if total size >1GB
+                iteratePcaps_Big();
+            else
+            {
+                iteratePcaps();    
+            }             
             sw2.Stop();
             foreach(int stream in streamID)
             {
@@ -206,8 +211,7 @@ public partial class PlotData : Form
             }
         }
         SetSize();
-        sw.Stop();
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+        sw.Stop();        
         if (Globals.showErrorSummary)
         {
             Thread logWindow = new Thread(() => new ErrorSummaryWindow().ShowDialog());
@@ -215,7 +219,186 @@ public partial class PlotData : Form
             logWindow.IsBackground = true;
             logWindow.Start();
         }
-        this.Text = String.Format("Total time for parsing ={0} | time to read PCAPs={1}", sw.Elapsed.ToString(), sw2.Elapsed.ToString());          
+        frame = null;
+        streamData = null;
+        this.Text = String.Format("Total time for parsing ={0} | time to read PCAPs={1}", sw.Elapsed.ToString(), sw2.Elapsed.ToString());
+        this.SuspendLayout();
+        this.ResumeLayout(false);
+    }
+
+    private static void iteratePcaps_Big()
+    {
+        Dictionary<int, bool> firstTime = new Dictionary<int, bool>(streamData.Count);
+        Dictionary<int,Dictionary<string, bool>>storedData = new Dictionary<int,Dictionary<string, bool>>(streamData.Count);
+        foreach (int e in streamData.Keys)
+        {
+            firstTime[e] = true;
+            storedData[e] = new Dictionary<string, bool>();
+            foreach (string parName in streamData[e].Keys)
+            {
+                storedData[e][parName] = false;
+            }
+        }
+        System.Diagnostics.Stopwatch save = new System.Diagnostics.Stopwatch();
+        int fileCnt = Globals.filePCAP_list.Length;
+        double[] dataTMP = null;
+        foreach (string p in Globals.filePCAP_list)
+        {
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            //Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+            LoadData(p);
+            foreach (int stream in streamData.Keys)
+            {
+                Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+                if (Globals.channelsSelected[stream].Count == 0) continue;
+                foreach (string parName in streamData[stream].Keys)
+                {
+                    dataPcap_tmp[parName] = streamData[stream][parName].ToArray();
+                    streamData[stream][parName].Clear();
+                    //int len=0;
+                    int previousLen = 0;
+                    if (firstTime[stream]) previousLen = dataPcap_tmp[parName].Length;
+                    else
+                    {
+                        if (fileCnt == 1)
+                        {
+                            dataTMP = LoadTempData(stream, parName);
+                            if (storedData[stream][parName] == false) previousLen = dataToPlot[stream][parName].Count;
+                            previousLen = previousLen + dataTMP.Length + dataPcap_tmp[parName].Length;                            
+                        }
+                        else if (storedData[stream][parName] == false)
+                        {
+                            previousLen = dataToPlot[stream][parName].Count;
+                            previousLen = previousLen + dataPcap_tmp[parName].Length;
+                        }
+                        else previousLen = dataPcap_tmp[parName].Length;
+                    }
+
+                    uint cnt = 0;
+                    double[] x = new double[previousLen];
+                    double[] y = new double[previousLen];
+
+                    if (firstTime[stream] == false)
+                    {
+                        if (fileCnt == 1)
+                        {
+                            int dataSize = dataTMP.Length;
+                            for (int i = 0; i != dataSize; i++)
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataTMP[i];
+                                cnt++;
+                            }                        
+                        }
+                        if (storedData[stream][parName] == false)                        
+                        {
+                            int dataSize = dataToPlot[stream][parName].Count;
+                            for (int i = 0; i != dataSize; i++)
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataToPlot[stream][parName][i].Y;
+                                cnt++;
+                            }
+                        }
+                        //previousLen = x.Length;                            
+                        foreach (double dataItem in dataPcap_tmp[parName])
+                        {
+                            x[cnt] = cnt;
+                            y[cnt] = dataItem;
+                            cnt++;
+                        }
+                    }
+                    else
+                    {
+                        foreach (double dataItem in dataPcap_tmp[parName])
+                        {
+                            x[cnt] = cnt;
+                            y[cnt] = dataItem;
+                            cnt++;
+                        }
+                    }
+                    dataToPlot[stream][parName] = null;                 
+                    
+                    if (fileCnt==1)
+                    {
+                        dataToPlot[stream][parName] = new FilteredPointList(x, y);
+                        dataTMP = null;
+                    }
+                    else if (cnt > 1000000) //store into file if 1 million points
+                    {
+                        //save.Start();
+                        SaveTempData(stream, parName, y);
+                        //save.Stop();
+                        //MessageBox.Show(save.Elapsed.ToString());
+                        //save.Restart();
+                        storedData[stream][parName] = true;
+                        //double[] data = LoadTempData(stream, parName);
+                        //save.Stop();
+                        //MessageBox.Show(save.Elapsed.ToString());
+                    }
+                    else
+                    {
+                        dataToPlot[stream][parName] = new FilteredPointList(x, y);
+                        storedData[stream][parName] = false;
+                    }
+                    y = null;
+                    //streamData[stream][parName].Clear();                    
+                }
+                //dataToPlot[parName] = dataTMP;
+                firstTime[stream] = false;
+                //streamData[stream].Clear();
+            }
+            fileCnt--;            
+        }
+
+    }
+    private static double[] LoadTempData(int stream, string parName)
+    {
+        BinaryReader Reader = null;
+        
+        string Name = String.Format(@"{0}\{1}_{2}.dat",Globals.fileDump,stream,parName);
+        double[] data = null;
+        try
+        {
+            Reader = new BinaryReader(File.Open(Name, FileMode.Open));
+            int size = (int)(Reader.BaseStream.Length/8); //divide by 8 to get number of doubles? /Unsafe.            
+            data = new double[size+1];             
+            for (int i = 0; i != size; i++)
+                data[i] = Reader.ReadDouble();
+            Reader.Close();
+        }
+        catch
+        {
+            //...
+            return null;
+        }
+        return data;       
+    }
+    private static bool SaveTempData(int stream, string parName, double[] data)
+    {
+        BinaryWriter Writer = null;
+        string Name = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+
+        try
+        {
+            // Create a new stream to write to the file
+            FileStream fs = new FileStream(Name, FileMode.Append);
+            Writer = new BinaryWriter(fs);
+            //var data = streamData[stream][parName];
+            // Writer raw data  
+            int size = data.Length;
+            for (int i = 0; i != size;i++ )
+                Writer.Write(data[i]);
+            Writer.Flush();
+            Writer.Close();
+        }
+        catch
+        {
+            //...
+            return false;
+        }
+        return true;       
+
     }
 
     private static void iteratePcaps()
@@ -284,10 +467,9 @@ public partial class PlotData : Form
                     //dataTMP.Add(x, y);
                     dataToPlot[stream][parName] = null;
                     dataToPlot[stream][parName] = new FilteredPointList(x, y);
-                    //streamData[stream][parName].Clear();                    
+                    streamData[stream][parName].Clear();                    
                 }
-                    //dataToPlot[parName] = dataTMP;
-            
+                    //dataToPlot[parName] = dataTMP;            
                 firstTime[stream] = false;
                 //streamData[stream].Clear();
             }

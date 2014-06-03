@@ -54,6 +54,8 @@
             this.button4 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.checkBox6 = new System.Windows.Forms.CheckBox();
+            this.button5 = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -186,6 +188,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.checkBox6);
             this.groupBox1.Controls.Add(this.checkBox5);
             this.groupBox1.Controls.Add(this.checkBox4);
             this.groupBox1.Controls.Add(this.checkBox3);
@@ -214,7 +217,7 @@
             // 
             this.checkBox4.AutoSize = true;
             this.checkBox4.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.checkBox4.Location = new System.Drawing.Point(9, 110);
+            this.checkBox4.Location = new System.Drawing.Point(9, 133);
             this.checkBox4.Name = "checkBox4";
             this.checkBox4.Size = new System.Drawing.Size(189, 17);
             this.checkBox4.TabIndex = 3;
@@ -225,7 +228,7 @@
             // 
             this.checkBox3.AutoSize = true;
             this.checkBox3.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.checkBox3.Location = new System.Drawing.Point(9, 87);
+            this.checkBox3.Location = new System.Drawing.Point(9, 110);
             this.checkBox3.Name = "checkBox3";
             this.checkBox3.Size = new System.Drawing.Size(132, 17);
             this.checkBox3.TabIndex = 2;
@@ -248,7 +251,7 @@
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(9, 64);
+            this.checkBox1.Location = new System.Drawing.Point(9, 87);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(94, 17);
             this.checkBox1.TabIndex = 0;
@@ -261,6 +264,7 @@
             this.flowLayoutPanel1.Controls.Add(this.button2);
             this.flowLayoutPanel1.Controls.Add(this.button4);
             this.flowLayoutPanel1.Controls.Add(this.button3);
+            this.flowLayoutPanel1.Controls.Add(this.button5);
             this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 156);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(503, 50);
@@ -310,6 +314,27 @@
             // backgroundWorker1
             // 
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
+            // 
+            // checkBox6
+            // 
+            this.checkBox6.AutoSize = true;
+            this.checkBox6.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.checkBox6.Location = new System.Drawing.Point(9, 64);
+            this.checkBox6.Name = "checkBox6";
+            this.checkBox6.Size = new System.Drawing.Size(152, 17);
+            this.checkBox6.TabIndex = 5;
+            this.checkBox6.Text = "Save inet-x or data- TODO";
+            this.checkBox6.UseVisualStyleBackColor = true;
+            // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(340, 3);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(79, 42);
+            this.button5.TabIndex = 4;
+            this.button5.Text = "Select Temp Folder";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // MainWindow
             // 
@@ -363,6 +388,8 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel7;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel8;
         private System.Windows.Forms.CheckBox checkBox5;
+        private System.Windows.Forms.CheckBox checkBox6;
+        private System.Windows.Forms.Button button5;
 
     }
 }

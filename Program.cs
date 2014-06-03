@@ -38,6 +38,7 @@ namespace Plot_iNET_X
         public static string limitfile { get; set; }
 
         //statistics
+        public static UInt32 fileSize { get; set; }
         public static int totalFrames { get; set; }
         public static Dictionary<int, int[]> framesReceived { get; set; }
 
@@ -62,5 +63,10 @@ namespace Plot_iNET_X
         public static double[][][] limitArray { get; set; }
 
 
+
+
+
+        public static string filepcap_TMP { get; set; }
+        public static string fileDump { get; set; }
     }
 }

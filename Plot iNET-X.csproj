@@ -22,7 +22,7 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationRevision>2</ApplicationRevision>
     <ApplicationVersion>0.0.5.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -77,16 +77,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PcapDotNet.Base">
-      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Base.dll</HintPath>
+      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Base.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Core">
-      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Core.dll</HintPath>
+      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Core.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Core.Extensions">
-      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Core.Extensions.dll</HintPath>
+      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Core.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="PcapDotNet.Packets">
-      <HintPath>..\..\_C#_libaries\PcapDotNet.Binaries.0.10.0.67076\PcapDotNet.Binaries.0.10.0.67076.x64\PcapDotNet.Packets.dll</HintPath>
+      <HintPath>..\..\DrawGraph\lib\x64\PcapDotNet.Packets.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -99,7 +99,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="ZedGraph">
-      <HintPath>..\..\_C#_libaries\zedgraph_dll_v515\zedgraph_dll_v5.1.5\ZedGraph.dll</HintPath>
+      <HintPath>..\..\DrawGraph\lib\zedGraph\ZedGraph.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

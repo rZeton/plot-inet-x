@@ -23,6 +23,8 @@ public partial class ErrorSummaryWindow : Form
         zedGraphControl1.GraphPane.IsFontsScaled = false;
         PrepareErrorList();
         CreateErrorChart(zedGraphControl1);
+        this.SuspendLayout();
+        this.ResumeLayout(false);
     }
 
     #region EditMenu
