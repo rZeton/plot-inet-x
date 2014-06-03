@@ -30,9 +30,8 @@ namespace Plot_iNET_X
         }
 
         private void updateGUI_tick(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            if (Globals.errorMsg.Length == 0) return;
-            if (Globals.streamMsg.Length == 0) return;
+        {            
+            if ((Globals.errorMsg.Length == 0)&&(Globals.streamMsg.Length == 0)) return;
             if (backgroundWorker1.IsBusy) return;
             backgroundWorker1.RunWorkerAsync();
         }
@@ -40,7 +39,7 @@ namespace Plot_iNET_X
         {               
             UpdateGui = delegate
             {
-                this.textBox2.AppendText(String.Format("{0}",Globals.streamMsg));
+                this.textBox2.AppendText(String.Format("{0}\t{1}\n",DateTime.Now, Globals.streamMsg));
                 this.textBox2.Refresh();
                 this.textBox1.AppendText(Globals.errorMsg.ToString());
             };

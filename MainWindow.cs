@@ -33,7 +33,7 @@ namespace Plot_iNET_X
             updateMonitorClock.Elapsed += new System.Timers.ElapsedEventHandler(updateMonitor_Tick);
             updateMonitorClock.Enabled = true;
 
-            Globals.streamMsg = new StringBuilder(String.Format("Started at: {0}\n",DateTime.Now));
+            Globals.streamMsg = new StringBuilder(String.Format("=====Started=====\n"));
             Globals.errorMsg = new StringBuilder();
 
             _logWindow = new LogWindow();
