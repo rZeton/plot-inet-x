@@ -62,11 +62,8 @@ namespace Plot_iNET_X
 
         public static double[][][] limitArray { get; set; }
 
-
-
-
-
+        
         public static string filepcap_TMP { get; set; }
-        public static string fileDump { get; set; }
+        public static string fileDump = null;
     }
 }

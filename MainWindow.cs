@@ -166,6 +166,12 @@ namespace Plot_iNET_X
         private void button5_Click(object sender, EventArgs e)
         {
             OpenFile("Dump_folder");
+            if (Globals.fileDump != null)
+            {
+                this.label1.Text = String.Format("Dump Location =\n{0}",
+                Globals.fileDump);
+            }
+            else this.label1.Text = String.Format("Dump Location not selected. Application main folder will be used");
         }
 
         private void toolStripStatusLabel5_Click(object sender, EventArgs e)
@@ -292,12 +298,13 @@ namespace Plot_iNET_X
                 DialogResult folderRes = folderBrowserDialog1.ShowDialog();
                 if (folderRes == DialogResult.OK)
                 {
-                    MessageBox.Show(String.Format("This Location {0} will be cleared now.\n SAVE DATA NOW !!! \n Press OK to continue.",
-                        folderBrowserDialog1.SelectedPath),
-                        "Temp Folder Erase", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+
                     IEnumerable<string> files = System.IO.Directory.EnumerateFiles(folderBrowserDialog1.SelectedPath, "*.*", System.IO.SearchOption.AllDirectories)
                                     .Where(s => s.EndsWith(".dat") || s.EndsWith(".tmp"));
-
+                    MessageBox.Show(String.Format("Location will be cleared now:\n{0}\n\nCOPY YOUR {1} DATA FILES NOW !!! \n Press OK to DELETE.",
+                        folderBrowserDialog1.SelectedPath,files.ToList<string>().Count),
+                        "Temp Folder Erase", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     foreach (string file in files)
                     {
                         new System.IO.FileInfo(file).Delete();
