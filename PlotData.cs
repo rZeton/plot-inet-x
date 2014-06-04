@@ -81,6 +81,62 @@ public partial class PlotData : Form
         zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
         zedGraphControl1.GraphPane.IsFontsScaled = false;
     }
+
+    public PlotData(List<int> streamInput, string option)
+    {
+        if (option != "dumpFile")
+        {
+            MessageBox.Show(String.Format("wrong option {0}", option));
+            return;
+        }
+        #region Initialize_Globals
+        try
+        {
+            streamID = streamInput;
+            streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
+            dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
+            Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.totalErrors = 0;
+            Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.framesReceived = new Dictionary<int, int[]>();
+            Globals.totalFrames = 0;
+            foreach (int stream in Globals.limitPCAP.Keys)
+            {
+                dataToPlot[stream] = new Dictionary<string, FilteredPointList>();
+                Globals.packetErrors[stream] = new Dictionary<string, uint>(){
+            {"total",0}, //used for all parameters in that stream
+            {"pktLost",0},
+            {"SEQ",0}};
+                Globals.parError[stream] = new Dictionary<string, uint>();
+                Globals.framesReceived[stream] = new int[4] { 0, 0, 0, 0 };
+                foreach (string parName in Globals.limitPCAP[stream].Keys)
+                {
+                    Globals.parError[stream][parName] = 0;
+                }
+
+                if (Globals.channelsSelected[stream].Count != 0)
+                {
+                    streamData[stream] = new Dictionary<string, List<double>>();
+                    foreach (string parName in Globals.channelsSelected[stream])
+                    {
+                        streamData[stream][parName] = new List<double>();
+                    }
+                }
+
+            }
+        }
+        catch (Exception exInit)
+        {
+            MessageBox.Show(String.Format("Crashed during globals initialization\nRead the rest of the crash report below\n\n\n{0}",
+                            exInit.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        #endregion Initialize_Globals
+
+        InitializeComponent();
+        zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
+        zedGraphControl1.GraphPane.IsFontsScaled = false;
+    }
     private void Form1_Resize(object sender, EventArgs e)
     {
         SetSize();
@@ -187,12 +243,19 @@ public partial class PlotData : Form
         if (Globals.filePCAP == null)
         {    
             sw2.Start();
-            if (Globals.fileSize > 1000) //save items to file if total size >1GB
-                iteratePcaps_Big();
-            else
+            if (Globals.usePCAP)
             {
-                iteratePcaps();    
-            }             
+                if (Globals.fileSize > 1000) //save items to file if total size >1GB
+                    iteratePcaps_Big();
+                else
+                {
+                    iteratePcaps();
+                }
+            }
+            else if(Globals.useDumpFiles)
+            {
+                LoadBinaryFiles();
+            }
             sw2.Stop();
             foreach(int stream in streamID)
             {
@@ -224,6 +287,26 @@ public partial class PlotData : Form
         this.Text = String.Format("Total time for parsing ={0} | time to read PCAPs={1}", sw.Elapsed.ToString(), sw2.Elapsed.ToString());
         this.SuspendLayout();
         this.ResumeLayout(false);
+    }
+
+    private void LoadBinaryFiles()
+    {
+        foreach(int stream in streamID)
+        {            
+            foreach(string parName in Globals.channelsSelected[stream])
+            {
+                double[] y = LoadTempData(stream, parName);
+                long size = y.LongLength;
+                double[] x = new double[size];
+                for (int e = 0; e != size;e++ )
+                {
+                    x[e] = e;
+                }
+                dataToPlot[stream][parName] = new FilteredPointList(x, y);
+                x = null;
+                y = null;
+            }
+        }
     }
 
     private static void iteratePcaps_Big()
@@ -354,8 +437,7 @@ public partial class PlotData : Form
     }
     private static double[] LoadTempData(int stream, string parName)
     {
-        BinaryReader Reader = null;
-        
+        BinaryReader Reader = null;        
         string Name = String.Format(@"{0}\{1}_{2}.dat",Globals.fileDump,stream,parName);
         double[] data = null;
         try
@@ -367,9 +449,9 @@ public partial class PlotData : Form
                 data[i] = Reader.ReadDouble();
             Reader.Close();
         }
-        catch
+        catch (Exception e)
         {
-            //...
+            LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
             return null;
         }
         return data;       
@@ -392,10 +474,10 @@ public partial class PlotData : Form
             Writer.Flush();
             Writer.Close();
         }
-        catch
+        catch (Exception e)
         {
-            //...
-            return false;
+            LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
+            return false;        
         }
         return true;       
 

@@ -49,10 +49,11 @@
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBox7 = new System.Windows.Forms.CheckBox();
+            this.button3 = new System.Windows.Forms.Button();
             this.checkBox6 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
-            this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
@@ -76,7 +77,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(595, 281);
+            this.panel1.Size = new System.Drawing.Size(595, 287);
             this.panel1.TabIndex = 1;
             // 
             // groupBox3
@@ -87,7 +88,7 @@
             this.groupBox3.Controls.Add(this.checkBox4);
             this.groupBox3.Location = new System.Drawing.Point(3, 136);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(242, 119);
+            this.groupBox3.Size = new System.Drawing.Size(242, 126);
             this.groupBox3.TabIndex = 5;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Plot Settings";
@@ -149,7 +150,7 @@
             this.toolStripStatusLabel8,
             this.toolStripStatusLabel6,
             this.toolStripStatusLabel5});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 259);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 265);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(595, 22);
             this.statusStrip1.TabIndex = 4;
@@ -226,7 +227,7 @@
             this.groupBox2.Controls.Add(this.label3);
             this.groupBox2.Location = new System.Drawing.Point(251, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(341, 166);
+            this.groupBox2.Size = new System.Drawing.Size(341, 153);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Selected Files Info";
@@ -260,6 +261,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.checkBox7);
             this.groupBox1.Controls.Add(this.button3);
             this.groupBox1.Controls.Add(this.checkBox6);
             this.groupBox1.Controls.Add(this.checkBox2);
@@ -270,11 +272,33 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "File Settings";
             // 
+            // checkBox7
+            // 
+            this.checkBox7.AutoSize = true;
+            this.checkBox7.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.checkBox7.Location = new System.Drawing.Point(9, 42);
+            this.checkBox7.Name = "checkBox7";
+            this.checkBox7.Size = new System.Drawing.Size(115, 17);
+            this.checkBox7.TabIndex = 6;
+            this.checkBox7.Text = "Open Folder [*.dat]";
+            this.checkBox7.UseVisualStyleBackColor = true;
+            this.checkBox7.CheckedChanged += new System.EventHandler(this.checkBox7_CheckedChanged);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(183, 83);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(53, 38);
+            this.button3.TabIndex = 2;
+            this.button3.Text = "Parse xidml";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
+            // 
             // checkBox6
             // 
             this.checkBox6.AutoSize = true;
             this.checkBox6.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.checkBox6.Location = new System.Drawing.Point(9, 42);
+            this.checkBox6.Location = new System.Drawing.Point(9, 104);
             this.checkBox6.Name = "checkBox6";
             this.checkBox6.Size = new System.Drawing.Size(152, 17);
             this.checkBox6.TabIndex = 5;
@@ -299,34 +323,24 @@
             this.flowLayoutPanel1.Controls.Add(this.button4);
             this.flowLayoutPanel1.Controls.Add(this.button5);
             this.flowLayoutPanel1.Controls.Add(this.button1);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(251, 178);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(251, 165);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(341, 77);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(341, 97);
             this.flowLayoutPanel1.TabIndex = 1;
-            // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(183, 83);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(53, 38);
-            this.button3.TabIndex = 2;
-            this.button3.Text = "Parse xidml";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // button2
             // 
             this.button2.Location = new System.Drawing.Point(3, 3);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(88, 42);
+            this.button2.Size = new System.Drawing.Size(52, 42);
             this.button2.TabIndex = 1;
-            this.button2.Text = "Select PCAP and Config File";
+            this.button2.Text = "Select Source";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(97, 3);
+            this.button4.Location = new System.Drawing.Point(61, 3);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(65, 42);
             this.button4.TabIndex = 3;
@@ -336,7 +350,7 @@
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(168, 3);
+            this.button5.Location = new System.Drawing.Point(132, 3);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(88, 42);
             this.button5.TabIndex = 4;
@@ -346,7 +360,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(262, 3);
+            this.button1.Location = new System.Drawing.Point(226, 3);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(70, 42);
             this.button1.TabIndex = 0;
@@ -364,7 +378,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(595, 281);
+            this.ClientSize = new System.Drawing.Size(595, 287);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -417,6 +431,7 @@
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox checkBox7;
 
     }
 }

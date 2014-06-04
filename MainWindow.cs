@@ -47,7 +47,17 @@ namespace Plot_iNET_X
         //Form Settings handlers
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            Globals.filePCAP = null;
+            if (checkBox2.Checked)
+            {
+                Globals.filePCAP = null;
+                Globals.usePCAP = true;
+                Globals.useDumpFiles = false;
+                checkBox7.Checked = false;
+            }
+            else
+            {
+                Globals.usePCAP = false;
+            }
         }
         private void checkBox5_CheckedChanged(object sender, EventArgs e)
         {
@@ -57,25 +67,38 @@ namespace Plot_iNET_X
         {
             Globals.usePTP = !Globals.usePTP;
         }
-
+        private void checkBox7_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox7.Checked)
+            {
+                Globals.filePCAP = null;
+                Globals.usePCAP = false;
+                Globals.useDumpFiles = true;
+                checkBox2.Checked = false;
+            }
+            else
+            {
+                Globals.useDumpFiles = false;
+            }
+        }
         
         //GUI Events
         private void button2_Click(object sender, EventArgs e)
         {
             this.button1.Visible = true;
-            if (this.checkBox2.Checked)
+            if (Globals.usePCAP)
             {
                 OpenFile("PCAP_list");
                 string folder = System.IO.Path.GetDirectoryName(Globals.filePCAP_list[0]);
                 long size = 0;
-            	foreach (string file in Globals.filePCAP_list)
-	            {
-	                // 3.
-	                // Use FileInfo to get length of each file.
-	                System.IO.FileInfo info = new System.IO.FileInfo(file);
-	                size += info.Length;
-	            }
-                Globals.fileSize = (UInt32) (size / 1000000); //get MBs
+                foreach (string file in Globals.filePCAP_list)
+                {
+                    // 3.
+                    // Use FileInfo to get length of each file.
+                    System.IO.FileInfo info = new System.IO.FileInfo(file);
+                    size += info.Length;
+                }
+                Globals.fileSize = (UInt32)(size / 1000000); //get MBs
                 try
                 {
                     this.label3.Text = String.Format("{2} pcaps from {0}\n Total Size = {1} MB",
@@ -89,6 +112,7 @@ namespace Plot_iNET_X
                     Globals.filePCAP_list, ex.ToString()), "PCAP selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+            else if (Globals.useDumpFiles) LoadDump();
             else
             {
                 OpenFile("PCAP");
@@ -104,26 +128,6 @@ namespace Plot_iNET_X
                     MessageBox.Show(String.Format("Cannot open {0} ,please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
                     Globals.filePCAP, ex.ToString()), "PCAP selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }
-            OpenFile("limit");
-            try
-            {
-                this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
-                    System.IO.Path.GetFileName(Globals.limitfile),
-                    Globals.limitArray.Length);//Globals.limitPCAP.Count);//"limits.csv");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
-                Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            Globals.channelsSelected = new Dictionary<int, List<string>>();
-
-            //foreach (int stream in Globals.limitPCAP.Keys)
-            for (int i=0; i!=Globals.limitArray.Length;i++)
-            {
-                int stream = (int)Globals.limitArray[i][0][0];
-                Globals.channelsSelected[stream] = new List<string>();
             }
             flowLayoutPanel1.SuspendLayout();
             flowLayoutPanel1.ResumeLayout(false);
@@ -150,7 +154,7 @@ namespace Plot_iNET_X
         }
         private void button4_Click(object sender, EventArgs e)
         {
-            OpenFile("limit");
+            OpenFile("limit");            
             try
             {
                 this.label4.Text = String.Format("Config Name = {0}\n Streams = {1} ",
@@ -162,6 +166,15 @@ namespace Plot_iNET_X
                 MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
                 Globals.limitfile, ex.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            Globals.channelsSelected = new Dictionary<int, List<string>>();
+
+            //foreach (int stream in Globals.limitPCAP.Keys)
+            for (int i = 0; i != Globals.limitArray.Length; i++)
+            {
+                int stream = (int)Globals.limitArray[i][0][0];
+                Globals.channelsSelected[stream] = new List<string>();
+            }
         }
         private void button5_Click(object sender, EventArgs e)
         {
@@ -172,6 +185,34 @@ namespace Plot_iNET_X
                 Globals.fileDump);
             }
             else this.label1.Text = String.Format("Dump Location not selected. Application main folder will be used");
+        }
+        
+        private void LoadDump()
+        {
+            OpenFile("LoadFromDump");
+            string folder = System.IO.Path.GetDirectoryName(Globals.fileDump_list[0]);
+            Globals.fileDump = folder;
+            long size = 0;
+            foreach (string file in Globals.fileDump_list)
+            {
+                // 3.
+                // Use FileInfo to get length of each file.
+                System.IO.FileInfo info = new System.IO.FileInfo(file);
+                size += info.Length;
+            }
+            Globals.fileSize = (UInt32)(size / 1000000); //get MBs
+            try
+            {
+                this.label3.Text = String.Format("{2} Binary data files from {0}\n Total Size = {1} MB",
+                                                folder,
+                                                Globals.fileSize,
+                                                Globals.fileDump_list.Length);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(String.Format("Cannot open {0}, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+                Globals.fileDump_list, ex.ToString()), "Dump file selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void toolStripStatusLabel5_Click(object sender, EventArgs e)
@@ -198,8 +239,8 @@ namespace Plot_iNET_X
         {
             try
             {
-
                 selChanObj = new selectChannel();
+
                 //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 
                 // TODO parallel streams ?
@@ -226,7 +267,9 @@ namespace Plot_iNET_X
                     }
                 }
                 //GraphPlot.ShowDialog();
-                Thread t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                Thread t1=null;
+                if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
+                else t1= new Thread(() => new PlotData(streamID).ShowDialog());
                 t1.Priority = ThreadPriority.Highest;
                 t1.IsBackground = true;
                 t1.Start();
@@ -250,8 +293,11 @@ namespace Plot_iNET_X
                 case ("Dump_folder"):
                     folderBrowserDialog1.Description = "Select Folder to Dump Temporary data";
                     break;
-                case ("PCAP_list"):                    
+                case ("PCAP_list"):
                     folderBrowserDialog1.Description = "Select Folder With PCAPs to parse";
+                    break;
+                case ("LoadFromDump"):                    
+                    folderBrowserDialog1.Description = "Select Folder With Data Dump to parse";
                     //openFileDialog1.Filter = "Packet Dump File (.cap)|*.cap;*.pcap|All Files (*.*)|*.*";
                     break;
                 case ("PCAP"):
@@ -310,6 +356,27 @@ namespace Plot_iNET_X
                         new System.IO.FileInfo(file).Delete();
                     }
                     Globals.fileDump = folderBrowserDialog1.SelectedPath;
+                    return;
+                }
+                else return;
+            }
+            if (type == "LoadFromDump")
+            {
+                DialogResult folderRes = folderBrowserDialog1.ShowDialog();
+                if (folderRes == DialogResult.OK)
+                {
+                    // string[] files = System.IO.Directory.GetFiles(folderBrowserDialog1.SelectedPath);
+
+                    IEnumerable<string> files = System.IO.Directory.EnumerateFiles(folderBrowserDialog1.SelectedPath, "*.*", System.IO.SearchOption.AllDirectories)
+                                .Where(s => s.EndsWith(".dat") || s.EndsWith(".tmp"));
+
+                    Globals.fileDump_list = new string[files.ToList<string>().Count];
+                    int e = 0;
+                    foreach (string file in files)
+                    {
+                        Globals.fileDump_list[e] = file;
+                        e++;
+                    }
                     return;
                 }
                 else return;
@@ -525,6 +592,10 @@ namespace Plot_iNET_X
 
 
         }
+
+
+
+
    }
 
     public partial class selectChannel : Form

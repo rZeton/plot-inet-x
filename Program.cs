@@ -27,6 +27,8 @@ namespace Plot_iNET_X
         //checks for Form options
         public static Boolean showErrorSummary = false;
         public static bool usePTP = false;
+        public static bool useDumpFiles = false;
+        public static bool usePCAP = false;
 
         //file counters for output reports --TODO
         public static string errorFile;
@@ -65,5 +67,7 @@ namespace Plot_iNET_X
         
         public static string filepcap_TMP { get; set; }
         public static string fileDump = null;
+
+        public static string[] fileDump_list { get; set; }
     }
 }
