@@ -1,8 +1,10 @@
-﻿using PcapDotNet.Packets;
+﻿using PcapDotNet.Core;
+using PcapDotNet.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Plot_iNET_X.Analyser_Logic
@@ -11,7 +13,7 @@ namespace Plot_iNET_X.Analyser_Logic
     {
         private static List<int> streamID {get;set;}       
         public static Dictionary<int, Dictionary<string, List<double>>> streamData;
-
+        private static readonly SemaphoreSlim _sl = new SemaphoreSlim(initialCount: 1);
         //public PacketParser(List<int> streams)
         //{
         //    streamID = streams;
@@ -207,5 +209,73 @@ namespace Plot_iNET_X.Analyser_Logic
             Globals.totalFrames++;
         }
 
+
+        public static void getUDPPayloads()
+        {
+            int size= Globals.filePCAP_list.Length;
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            Parallel.For(0, size, (i) =>
+           {
+               LoadData(Globals.filePCAP_list[i]);
+           });
+
+           // for(int i=0; i!=size; i++)
+           //{
+           //    LoadData(Globals.filePCAP_list[i]);
+           //}
+            sw.Stop();
+            var msg = String.Format("it took {0} to get UDP payloads",sw.Elapsed.ToString());
+            LogItems.addStreamInfo(msg);
+            
+        }
+
+
+        public static void LoadData(string pcapfile)
+        {
+            Dictionary<int, Dictionary<string, double[]>> streamParameters = Globals.limitPCAP;
+            //try
+            //{               
+                using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,
+                                        PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
+                                        1000))     // read timeout
+                {
+                    communicator.ReceivePackets(0, extractUDP);
+                }
+                //}
+            //}
+            //catch (Exception e)
+            //{
+            //    var msg = (String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
+            //        pcapfile, e.ToString()));
+            //    LogItems.addParsingError(msg);
+            //}
+        }
+
+        private static void extractUDP(Packet packet)
+        {
+            int stream;
+            if (packet.Length < 64)
+            {
+                return; //broken packet
+            }
+            if ((packet.Ethernet.EtherType == PcapDotNet.Packets.Ethernet.EthernetType.IpV4) && (packet.Ethernet.IpV4.Udp.Length != 0))
+            {
+                byte[] frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
+                if (frame.Length < 28) return; //check correctness of UDP payload = -1;
+                else stream = (int)frame.ReadUInt(Globals.inetStart + 4, Endianity.Big);
+                
+                if (Globals.channelsSelected.ContainsKey(stream))
+                {
+                    SaveUDP(frame);
+                }
+            }            
+        }
+
+        private static void SaveUDP(byte[] frame)
+        {
+            string dump = Globals.fileDump;
+
+        }
     }
 }

@@ -239,7 +239,11 @@ namespace Plot_iNET_X
         {
             try
             {
-                selChanObj = new selectChannel();
+                if (checkBox6.Checked)
+                {
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
+                }
+                else selChanObj = new selectChannel();
 
                 //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 
@@ -261,18 +265,25 @@ namespace Plot_iNET_X
                     if (Globals.channelsSelected[stream].Count != 0)
                     {
                         streamID.Add(stream);
-                        //GraphPlot = new PlotData(stream);
-                        //GraphPlot.SuspendLayout();
-                        //GraphPlot.ResumeLayout(false);
                     }
                 }
-                //GraphPlot.ShowDialog();
-                Thread t1=null;
-                if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
-                else t1= new Thread(() => new PlotData(streamID).ShowDialog());
-                t1.Priority = ThreadPriority.Highest;
-                t1.IsBackground = true;
-                t1.Start();
+               
+
+                // Declare a new argument object.
+                //ThreadInfo threadInfo = new ThreadInfo();
+                //threadInfo.FileName = "file.txt";
+                //threadInfo.SelectedIndex = 3;
+
+                // Send the custom object to the threaded method.
+                
+                ThreadPool.QueueUserWorkItem(new WaitCallback(delegate(object state) {
+                    new PlotData(streamID).ShowDialog();}));
+                //Thread t1=null;
+                //if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
+                //else t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                //t1.Priority = ThreadPriority.Highest;
+                //t1.IsBackground = true;
+                //t1.Start();
             }
             catch (Exception ex)
             {
@@ -280,6 +291,10 @@ namespace Plot_iNET_X
             }
         }
 
+        private static void getUDPPayloads(Object stateInfo)
+        {
+            PacketParser.getUDPPayloads();
+        }
 
         private static void OpenFile(string type)
         {
