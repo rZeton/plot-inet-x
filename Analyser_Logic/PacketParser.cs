@@ -2,6 +2,7 @@
 using PcapDotNet.Packets;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -215,33 +216,41 @@ namespace Plot_iNET_X.Analyser_Logic
             int size= Globals.filePCAP_list.Length;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            Parallel.For(0, size, (i) =>
-           {
-               LoadData(Globals.filePCAP_list[i]);
-           });
-
-           // for(int i=0; i!=size; i++)
+            /*
+            * Parallel could be a HDD killer for big lists
+            * 
+            * 
+            */
+           //Parallel.For(0, size, (i) =>
            //{
-           //    LoadData(Globals.filePCAP_list[i]);
-           //}
+           //    LoadData(Globals.filePCAP_list[i], i);
+           //});
+
+            for (int i = 0; i != size; i++)
+            {
+                LoadData(Globals.filePCAP_list[i]);
+            }
             sw.Stop();
             var msg = String.Format("it took {0} to get UDP payloads",sw.Elapsed.ToString());
-            LogItems.addStreamInfo(msg);
-            
+            LogItems.addStreamInfo(msg);            
         }
-
+        
 
         public static void LoadData(string pcapfile)
         {
+            
             Dictionary<int, Dictionary<string, double[]>> streamParameters = Globals.limitPCAP;
             //try
-            //{               
+            //{           
+            int pktCnt;
                 using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,
                                         PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
                                         1000))     // read timeout
                 {
-                    communicator.ReceivePackets(0, extractUDP);
+                    communicator.ReceiveSomePackets(out pktCnt,-1, extractUDP);
+                        //communicator.ReceiveSomePackets((0, extractUDP);
                 }
+
                 //}
             //}
             //catch (Exception e)
@@ -267,15 +276,35 @@ namespace Plot_iNET_X.Analyser_Logic
                 
                 if (Globals.channelsSelected.ContainsKey(stream))
                 {
-                    SaveUDP(frame);
+                    SaveUDP(frame,stream);
                 }
             }            
         }
 
-        private static void SaveUDP(byte[] frame)
+        private static void SaveUDP(byte[] frame, int stream)
         {
             string dump = Globals.fileDump;
+            BinaryWriter Writer = null;
+            string Name = String.Format(@"{0}\Stream_{1}.dat", dump, stream);
+            FileStream fs = null;
+            //try
+            //{
+                // Create a new stream to write to the file
+                fs = new FileStream(Name, FileMode.Append);
+            //}
+            //catch (Exception e)
+            //{
+            //    LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
+            //}
 
-        }
+            Writer = new BinaryWriter(fs);
+
+            //Writer.Write(frame);
+            for (int i = 0; i != frame.Length; i++)
+                Writer.Write(frame[i]);
+            Writer.Flush();
+            Writer.Close();
+        }        
     }
+    
 }

@@ -276,14 +276,14 @@ namespace Plot_iNET_X
 
                 // Send the custom object to the threaded method.
                 
-                ThreadPool.QueueUserWorkItem(new WaitCallback(delegate(object state) {
-                    new PlotData(streamID).ShowDialog();}));
-                //Thread t1=null;
-                //if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
-                //else t1 = new Thread(() => new PlotData(streamID).ShowDialog());
-                //t1.Priority = ThreadPriority.Highest;
-                //t1.IsBackground = true;
-                //t1.Start();
+                //ThreadPool.QueueUserWorkItem(new WaitCallback(delegate(object state) {
+                //    new PlotData(streamID).ShowDialog();}));
+                Thread t1 = null;
+                if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
+                else t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                t1.Priority = ThreadPriority.Highest;
+                t1.IsBackground = true;
+                t1.Start();
             }
             catch (Exception ex)
             {
