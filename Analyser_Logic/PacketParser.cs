@@ -286,25 +286,26 @@ namespace Plot_iNET_X.Analyser_Logic
             string dump = Globals.fileDump;
             BinaryWriter Writer = null;
             string Name = String.Format(@"{0}\Stream_{1}.dat", dump, stream);
-            FileStream fs = null;
+           //FileStream fs = null;
             //try
             //{
                 // Create a new stream to write to the file
-                fs = new FileStream(Name, FileMode.Append);
+                //fs = new FileStream(Name, FileMode.Append);
             //}
             //catch (Exception e)
             //{
             //    LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
             //}
-
-            Writer = new BinaryWriter(fs);
-
-            //Writer.Write(frame);
-            for (int i = 0; i != frame.Length; i++)
-                Writer.Write(frame[i]);
-            Writer.Flush();
-            Writer.Close();
-        }        
+            using (FileStream fs = new FileStream(Name, FileMode.Append,FileAccess.Write,FileShare.None))
+            {
+                Writer = new BinaryWriter(fs);
+                //Writer.Write(frame);
+                for (int i = 0; i != frame.Length; i++)
+                    Writer.Write(frame[i]);
+                Writer.Flush();
+                Writer.Close();
+            }            
+        }   
     }
     
 }
