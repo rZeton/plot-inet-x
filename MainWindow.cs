@@ -135,13 +135,13 @@ namespace Plot_iNET_X
             this.ResumeLayout(false);
             
         }
+        
+        
         private void button6_Click(object sender, EventArgs e)
         {
             Globals.useCompare= true;
             ThreadPool.QueueUserWorkItem(new WaitCallback(Draw_FFT));
         }
-
-
         private void button1_Click(object sender, EventArgs e)
         {
             //GetPacket();
@@ -152,6 +152,7 @@ namespace Plot_iNET_X
             //plot.SetApartmentState(ApartmentState.STA);
             plot.Start();
         }
+
         private void button3_Click(object sender, EventArgs e)
         {
             //OpenFile("PCAP");
@@ -197,6 +198,12 @@ namespace Plot_iNET_X
         private void LoadDump()
         {
             OpenFile("LoadFromDump");
+            if (Globals.fileDump_list ==null)
+            {
+                MessageBox.Show(String.Format("No *.dat or *.tmp found, \nCheck the folder in explorer"),
+                    "Dump file selection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             string folder = System.IO.Path.GetDirectoryName(Globals.fileDump_list[0]);
             Globals.fileDump = folder;
             long size = 0;
@@ -769,6 +776,7 @@ namespace Plot_iNET_X
                 selectionFlow.ResumeLayout(false);
                 this.Controls.Add(selectionFlow);
                 this.Size = this.PreferredSize;//new Size(maximumX + 50, maximumY + 45);
+                this.Text = "Select Channels to Plot";
                 this.SuspendLayout();
                 this.ResumeLayout(false);
                 this.ShowDialog();
@@ -903,7 +911,7 @@ namespace Plot_iNET_X
 
         public string getIOUsage()
         {
-            var value = (ioCounter.NextValue() / 1000) + " kB/s";// proces.PrivateMemorySize64 / totalRam.RawValue ;// ramCounter.NextValue();
+            var value = (ioCounter.NextValue() / 1024 / 1024) + " MB/s";// proces.PrivateMemorySize64 / totalRam.RawValue ;// ramCounter.NextValue();
             return value;// / totalRam.NextValue();
 
         }

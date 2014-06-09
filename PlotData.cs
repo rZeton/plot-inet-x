@@ -88,7 +88,7 @@ public partial class PlotData : Form
     #region Initialize_Globals
         try
         {
-            streamID = streamInput;
+            streamID = streamInput;            
             streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
             dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
             Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
@@ -96,6 +96,7 @@ public partial class PlotData : Form
             Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
             Globals.framesReceived = new Dictionary<int, int[]>();
             Globals.totalFrames = 0;
+            int cntChannels=0;
             foreach (int stream in Globals.limitPCAP.Keys)
             {
                 dataToPlot[stream] = new Dictionary<string, FilteredPointList>();
@@ -116,10 +117,23 @@ public partial class PlotData : Form
                     foreach (string parName in Globals.channelsSelected[stream])
                     {
                         streamData[stream][parName] = new List<double>();
+                        cntChannels++;
                     }
                 }
 
             }
+            Globals.fileDump_list = new string[cntChannels];
+            foreach(int stream in Globals.channelsSelected.Keys)
+            {
+                if (Globals.channelsSelected[stream].Count != 0)
+                {
+                    foreach (string parName in Globals.channelsSelected[stream])
+                    {
+                        Globals.fileDump_list[--cntChannels] = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+                    }
+                }
+            }
+                
         }
         catch (Exception exInit)
         {
@@ -527,6 +541,7 @@ public partial class PlotData : Form
     private static bool SaveTempData(int stream, string parName, double[] data)
     {
         BinaryWriter Writer = null;
+        
         string Name = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
 
         try
