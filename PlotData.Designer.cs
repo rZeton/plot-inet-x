@@ -66,6 +66,7 @@
             this.Controls.Add(this.panel1);
             this.Name = "PlotData";
             this.Text = "Plot Data";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ClosePlot);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Resize += new System.EventHandler(this.Form1_Resize);
             this.panel1.ResumeLayout(false);

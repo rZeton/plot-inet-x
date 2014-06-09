@@ -23,7 +23,7 @@ public partial class PlotData : Form
 {
 
     private static List<int> streamID;
-    private static byte[] frame =new byte[65536];
+    private static byte[] frame=new byte[65536];
     private static Dictionary<int, Dictionary<string, List<double>>> streamData;
     private static Dictionary<int, Dictionary<string, FilteredPointList>> dataToPlot;
     private static double[] singleData = null;
@@ -1744,6 +1744,14 @@ public partial class PlotData : Form
                 stream.Close();
         }
         return false;
+    }
+
+    private void ClosePlot(object sender, FormClosingEventArgs e)
+    {
+        dataToPlot.Clear();
+        dataToPlot = null;        
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+        GC.WaitForFullGCComplete(500);
     }
 }    
     public static class getSomeColor

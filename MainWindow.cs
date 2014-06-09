@@ -144,13 +144,12 @@ namespace Plot_iNET_X
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            //GetPacket();
-            //selChanObj = new selectChannel();
-            //ThreadPool.QueueUserWorkItem(new WaitCallback(GetNewGraph));
+            
             Globals.useCompare = false;
-            Thread plot = new Thread(new ThreadStart(GetNewGraph));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(GetNewGraph));
+            //Thread plot = new Thread(new ThreadStart(GetNewGraph));
             //plot.SetApartmentState(ApartmentState.STA);
-            plot.Start();
+            //plot.Start();
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -253,7 +252,7 @@ namespace Plot_iNET_X
         private void Draw_FFT(object state)
         {
             //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-            selChanObj = new selectChannel();
+            selChanObj = new selectChannel("dump");
 
             List<int> streamID = new List<int>();
             foreach (int stream in Globals.channelsSelected.Keys)
@@ -297,7 +296,8 @@ namespace Plot_iNET_X
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
             plot.Dispose();            
         }
-        private void GetNewGraph()
+        
+        private void GetNewGraph(object state)
         {
             try
             {
@@ -306,6 +306,7 @@ namespace Plot_iNET_X
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
                 }
+                if (checkBox7.Checked) selChanObj = new selectChannel("from dump");
                 else selChanObj = new selectChannel();
 
                 //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
@@ -347,6 +348,64 @@ namespace Plot_iNET_X
                 t1.Priority = ThreadPriority.Highest;
                 t1.IsBackground = true;
                 t1.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+        
+        private void GetNewGraph()
+        {
+            try
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                if (checkBox6.Checked)
+                {
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
+                }
+                if (checkBox7.Checked) selChanObj = new selectChannel("from dump");
+                else selChanObj = new selectChannel();
+
+                //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+
+                // TODO parallel streams ?
+                //Parallel.ForEach(Globals.channelsSelected, kvp =>
+                //{
+                //    if (Globals.channelsSelected[kvp.Key].Count != 0)
+                //    {
+                //        GraphPlot = new PlotData(kvp.Key);
+                //        GraphPlot.SuspendLayout();
+                //        GraphPlot.ResumeLayout(false);
+                //        GraphPlot.ShowDialog();
+                //    }
+                //});
+
+                List<int> streamID = new List<int>();
+                foreach (int stream in Globals.channelsSelected.Keys)
+                {                    
+                    if (Globals.channelsSelected[stream].Count != 0)
+                    {
+                        streamID.Add(stream);
+                    }
+                }
+               
+
+                // Declare a new argument object.
+                //ThreadInfo threadInfo = new ThreadInfo();
+                //threadInfo.FileName = "file.txt";
+                //threadInfo.SelectedIndex = 3;
+
+                // Send the custom object to the threaded method.
+                
+                //ThreadPool.QueueUserWorkItem(new WaitCallback(delegate(object state) {
+                //    new PlotData(streamID).ShowDialog();}));
+                Thread t1 = null;
+                if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
+                else t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                t1.Priority = ThreadPriority.Highest;
+                t1.IsBackground = true;
+                t1.Start();                
             }
             catch (Exception ex)
             {
@@ -683,8 +742,13 @@ namespace Plot_iNET_X
 
     public partial class selectChannel : Form
     {
+        private string p;
+
         public string[] selectedChannel { get; set; }
 
+        /// <summary>
+        /// Open parameters from packets
+        /// </summary>
         public selectChannel()
         {
             try
@@ -717,6 +781,116 @@ namespace Plot_iNET_X
                         dataLabels[i].Size = dataLabels[i].PreferredSize;
                         dataSelect[i] = new CheckBox();
                         dataSelect[i].Name = String.Format("{0}", parametersList[i].ToString());
+                        dataSelect[i].AutoSize = false;
+                        dataSelect[i].Font = new Font(dataLabels[i].Font.FontFamily, 8, dataLabels[i].Font.Style);
+                        //Globals.dataHolders[i].TextAlign = ContentAlignment.BottomLeft;
+                        dataSelect[i].Size = dataSelect[i].PreferredSize;
+
+                        if (i % 20 == 0)
+                        {
+                            dataColumns[whichColumn] = new TableLayoutPanel();
+                            dataColumns[whichColumn].ColumnCount = 2;
+                            dataColumns[whichColumn].RowCount = 20;
+                        }
+                        dataColumns[whichColumn].Controls.Add(dataLabels[i]);
+                        dataColumns[whichColumn].Controls.Add(dataSelect[i]);
+                        dataColumns[whichColumn].Size = dataColumns[whichColumn].PreferredSize;
+                        if (dataColumns[whichColumn].Size.Height > maximumY) maximumY = dataColumns[whichColumn].Size.Height;
+                        //if (tabStream[pktCnt].Size.Width > maximumX) maximumX = tabStream[pktCnt].Size.Width;
+                    }
+                    for (int i = 0; i != dataColumns.Length; i++)
+                    {
+                        flow.Controls.Add(dataColumns[i]);
+                    }
+                    flow.SuspendLayout();
+                    flow.ResumeLayout(false);
+                    //tabStream[pktCnt].AutoScroll = true;
+                    //tabStream[pktCnt].AutoScrollPosition = new System.Drawing.Point(349, 0);
+                    flow.Size = flow.PreferredSize;
+                    tabStream[pktCnt].Controls.Add(flow);
+                    tabStream[pktCnt].Name = stream.ToString();
+                    tabStream[pktCnt].Text = String.Format("ID={0}", stream);
+                    tabStream[pktCnt].Size = tabStream[pktCnt].PreferredSize;
+                    if (tabStream[pktCnt].Size.Height > maximumY) maximumY = tabStream[pktCnt].Size.Height;
+                    if (tabStream[pktCnt].Size.Width > maximumX) maximumX = tabStream[pktCnt].Size.Width;
+                    pktCnt++;
+                }
+                foreach (TabPage stream in tabStream)
+                {
+                    streamParameterTabControl.Controls.Add(stream);
+                }
+                streamParameterTabControl.SuspendLayout(); streamParameterTabControl.ResumeLayout(false);
+                streamParameterTabControl.Size = new Size(maximumX + 5, maximumY + 15);//streamParameterTabControl.PreferredSize;
+                //this.Size = this.PreferredSize;
+                FlowLayoutPanel selectionFlow = new FlowLayoutPanel();
+                selectionFlow.FlowDirection = FlowDirection.LeftToRight;
+                selectionFlow.Controls.Add(streamParameterTabControl);
+                //streamParameterTabControl.Dock = DockStyle.Fill;                
+                Button btnOK = new Button();
+                btnOK.Text = "Draw";
+                btnOK.Click += new EventHandler(selectChannelClick);
+                selectionFlow.Controls.Add(btnOK);
+                Button btnAll = new Button();
+                btnAll.Text = "All";
+                btnAll.Click += new EventHandler(selectAllClick);
+                selectionFlow.Controls.Add(btnAll);
+
+                selectionFlow.Size = selectionFlow.PreferredSize;
+                selectionFlow.SuspendLayout();
+                selectionFlow.ResumeLayout(false);
+                this.Controls.Add(selectionFlow);
+                this.Size = this.PreferredSize;//new Size(maximumX + 50, maximumY + 45);
+                this.Text = "Select Channels to Plot";
+                this.SuspendLayout();
+                this.ResumeLayout(false);
+                this.ShowDialog();
+                this.Refresh();
+                // for future use // DrawParametersList();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(String.Format("No Stream ID was selected or StreamID={0} is not correct, check your limits file.\n\n{1}", Globals.streamID, e.Message.ToString()));
+            }
+        }
+
+        /// <summary>
+        /// To handle files
+        /// </summary>
+        /// <param name="p"></param>
+        public selectChannel(string p)
+        {
+            try
+            {
+                TabControl streamParameterTabControl = new TabControl();
+                int maximumX = 0;
+                int maximumY = 0;
+                TabPage[] tabStream = new TabPage[Globals.limitPCAP.Keys.Count];
+                int pktCnt = 0;
+                foreach (int stream in Globals.limitPCAP.Keys)
+                {
+                    string[] streamFiles = Array.FindAll(Globals.fileDump_list, element => element.Contains(String.Format("{0}_", stream)));
+                    List<string> parametersList = new List<string>(streamFiles.ToList());
+                    CheckBox[] dataSelect = new CheckBox[streamFiles.Length];
+                    System.Windows.Forms.Label[] dataLabels = new System.Windows.Forms.Label[streamFiles.Length];
+                    TableLayoutPanel[] dataColumns = new TableLayoutPanel[streamFiles.Length / 20 + 1];
+                    FlowLayoutPanel flow = new FlowLayoutPanel();
+                    flow.FlowDirection = FlowDirection.LeftToRight;
+                    tabStream[pktCnt] = new TabPage();
+                    for (int i = 0; i != streamFiles.Length; i++)
+                    {
+                        string streamString = stream.ToString();
+                        var parName = parametersList[i].Substring((streamString.Length + 1) + (parametersList[i].IndexOf(String.Format("{0}_", stream))));
+                        parName = parName.Substring(0, parName.LastIndexOf(".dat"));
+                        int whichColumn = i / 20;
+                        dataLabels[i] = new System.Windows.Forms.Label();
+                        dataLabels[i].Name = i.ToString();
+                        dataLabels[i].AutoSize = false;
+                        dataLabels[i].Text = String.Format("{0}", parName.ToString());
+                        dataLabels[i].Font = new Font(dataLabels[i].Font.FontFamily, 8, dataLabels[i].Font.Style);
+
+                        dataLabels[i].Size = dataLabels[i].PreferredSize;
+                        dataSelect[i] = new CheckBox();
+                        dataSelect[i].Name = String.Format("{0}", parName.ToString());
                         dataSelect[i].AutoSize = false;
                         dataSelect[i].Font = new Font(dataLabels[i].Font.FontFamily, 8, dataLabels[i].Font.Style);
                         //Globals.dataHolders[i].TextAlign = ContentAlignment.BottomLeft;
