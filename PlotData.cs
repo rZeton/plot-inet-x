@@ -22,14 +22,66 @@ namespace Plot_iNET_X
 public partial class PlotData : Form
 {
 
-    public static List<int> streamID;
-    public static byte[] frame =new byte[65536];
-    public static Dictionary<int, Dictionary<string, List<double>>> streamData;
-    public static Dictionary<int, Dictionary<string, FilteredPointList>> dataToPlot;
+    private static List<int> streamID;
+    private static byte[] frame =new byte[65536];
+    private static Dictionary<int, Dictionary<string, List<double>>> streamData;
+    private static Dictionary<int, Dictionary<string, FilteredPointList>> dataToPlot;
+    private static double[] singleData = null;
 
     public PlotData()
     {
         InitializeComponent();
+    }
+    public PlotData(double[] data, List<int> streamlist)
+    {
+        #region Initialize_Globals
+        try
+        {
+            streamID = streamlist;// new List<int> { 300 };
+            streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
+            dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
+            Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.totalErrors = 0;
+            Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.framesReceived = new Dictionary<int, int[]>();
+            Globals.totalFrames = 0;
+            foreach (int stream in Globals.limitPCAP.Keys)
+            {
+                dataToPlot[stream] = new Dictionary<string, FilteredPointList>();
+                Globals.packetErrors[stream] = new Dictionary<string, uint>(){
+            {"total",0}, //used for all parameters in that stream
+            {"pktLost",0},
+            {"SEQ",0}};
+                Globals.parError[stream] = new Dictionary<string, uint>();
+                Globals.framesReceived[stream] = new int[4] { 0, 0, 0, 0 };
+                foreach (string parName in Globals.limitPCAP[stream].Keys)
+                {
+                    Globals.parError[stream][parName] = 0;
+                }
+
+                if (Globals.channelsSelected[stream].Count != 0)
+                {
+                    streamData[stream] = new Dictionary<string, List<double>>();
+                    foreach (string parName in Globals.channelsSelected[stream])
+                    {
+                        streamData[stream][parName] = new List<double>();
+                    }
+                }
+
+            }
+        }
+        catch (Exception exInit)
+        {
+            MessageBox.Show(String.Format("Crashed during globals initialization\nRead the rest of the crash report below\n\n\n{0}",
+                            exInit.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        #endregion Initialize_Globals
+     
+        InitializeComponent();        
+        singleData = data;
+        zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
+        zedGraphControl1.GraphPane.IsFontsScaled = false;
     }
     public PlotData(List<int> streamInput)
     {
@@ -137,6 +189,7 @@ public partial class PlotData : Form
         zedGraphControl1.ContextMenuBuilder += new ZedGraphControl.ContextMenuBuilderEventHandler(Add_item_toMenu);
         zedGraphControl1.GraphPane.IsFontsScaled = false;
     }
+
     private void Form1_Resize(object sender, EventArgs e)
     {
         SetSize();
@@ -153,7 +206,7 @@ public partial class PlotData : Form
             {
                 dataToPlot[stream][par].SetBounds(zedGraphControl1.GraphPane.XAxis.Scale.Min, zedGraphControl1.GraphPane.XAxis.Scale.Max, (int)zedGraphControl1.GraphPane.Rect.Width);
             }
-        }     
+        }
     }
 
     #region ZedGRaph_Menu
@@ -240,7 +293,19 @@ public partial class PlotData : Form
         System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
         sw.Start();
         //dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
-        if (Globals.filePCAP == null)
+        if (Globals.useCompare)
+        {
+            Globals.useCompare = false;
+            double[] x = new double[singleData.Length];
+            for(int i=0; i!=x.Length;i++)
+            {
+                x[i] = i;
+            }
+            dataToPlot[streamID.First()]["ComparedData"] = new FilteredPointList(x, singleData);
+            singleData = null;
+            CreateGraph(zedGraphControl1, streamID.First(), "plotCompare");
+        }
+        else if (Globals.filePCAP == null)
         {    
             sw2.Start();
             if (Globals.usePCAP)
@@ -289,6 +354,8 @@ public partial class PlotData : Form
         this.ResumeLayout(false);
     }
 
+
+
     private void LoadBinaryFiles()
     {
         foreach(int stream in streamID)
@@ -308,7 +375,6 @@ public partial class PlotData : Form
             }
         }
     }
-
     private static void iteratePcaps_Big()
     {
         Dictionary<int, bool> firstTime = new Dictionary<int, bool>(streamData.Count);
@@ -438,8 +504,9 @@ public partial class PlotData : Form
     }
     private static double[] LoadTempData(int stream, string parName)
     {
-        BinaryReader Reader = null;        
-        string Name = String.Format(@"{0}\{1}_{2}.dat",Globals.fileDump,stream,parName);
+        BinaryReader Reader = null;
+        string Name = Array.Find(Globals.fileDump_list, element => element.Contains(String.Format("{0}_{1}", stream, parName)));
+        //string Name = String.Format(@"{0}\{1}_{2}.dat",Globals.fileDump,stream,parName);
         double[] data = null;
         try
         {
@@ -592,6 +659,43 @@ public partial class PlotData : Form
         // Tell ZedGraph to refigure the
         // axes since the data have changed
         zgc.AxisChange();            
+    }
+    private static void CreateGraph(ZedGraphControl zgc, int streamID, string ratioName)
+    {
+        // get a reference to the GraphPane
+        GraphPane myPane = zgc.GraphPane;
+
+
+        // Set the Titles
+        myPane.Title.Text = String.Format("Stream {0}", streamID);
+        myPane.XAxis.Title.Text = "Time [packet #]";
+        myPane.YAxis.Title.Text = "Value";
+
+        List<Color> allColors = new List<Color>();
+        var colors = getSomeColor.GetStaticPropertyBag(typeof(Color));
+
+        foreach (KeyValuePair<string, object> colorPair in colors)
+        {
+            allColors.Add((Color)colorPair.Value);
+        }
+
+
+        int colCnt = allColors.Count() - 1;
+        foreach (string param in dataToPlot[streamID].Keys)
+        {
+            LineItem myCurve = myPane.AddCurve(param, dataToPlot[streamID][param], getSomeColor.Blend(allColors[colCnt], Color.Black, 30));
+            myCurve.Line.IsOptimizedDraw = true;
+            myCurve.Symbol.IsVisible = false;
+            myCurve.Line.IsAntiAlias = true;
+            colCnt--;
+        }
+
+
+        myPane.XAxis.MajorGrid.IsVisible = true;
+        myPane.YAxis.MajorGrid.IsVisible = true;
+        // Tell ZedGraph to refigure the
+        // axes since the data have changed            
+        zgc.AxisChange();
     }
     private static void CreateGraph(ZedGraphControl zgc, Dictionary<string, FilteredPointList> dataToPlot, int streamID)
     {

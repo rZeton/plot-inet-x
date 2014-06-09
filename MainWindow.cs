@@ -135,12 +135,19 @@ namespace Plot_iNET_X
             this.ResumeLayout(false);
             
         }
+        private void button6_Click(object sender, EventArgs e)
+        {
+            Globals.useCompare= true;
+            ThreadPool.QueueUserWorkItem(new WaitCallback(Draw_FFT));
+        }
+
+
         private void button1_Click(object sender, EventArgs e)
         {
             //GetPacket();
             //selChanObj = new selectChannel();
             //ThreadPool.QueueUserWorkItem(new WaitCallback(GetNewGraph));
-
+            Globals.useCompare = false;
             Thread plot = new Thread(new ThreadStart(GetNewGraph));
             //plot.SetApartmentState(ApartmentState.STA);
             plot.Start();
@@ -235,10 +242,59 @@ namespace Plot_iNET_X
             }
         }
 
+
+        private void Draw_FFT(object state)
+        {
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            selChanObj = new selectChannel();
+
+            List<int> streamID = new List<int>();
+            foreach (int stream in Globals.channelsSelected.Keys)
+            {
+                if (Globals.channelsSelected[stream].Count != 0)
+                {
+                    streamID.Add(stream);
+                }
+            }
+            double[] parameter1 = null;
+            double[] parameter2 = null;
+            int c = 0;
+            foreach (int stream in Globals.channelsSelected.Keys)
+            {
+                foreach (string parName in Globals.channelsSelected[stream])
+                {
+                    if (c == 0)
+                    {
+                        parameter1 = DataComparer.LoadTempData(stream, parName);
+                        c++;
+                    }
+                    else if (c == 1)
+                    {
+                        parameter2 = DataComparer.LoadTempData(stream, parName);
+                        c++;
+                    }
+                }
+            }
+            Double[] Out = null;// new double[parameter2.Length];
+            Out = DataComparer.getRatio(parameter1, parameter2);
+            double correlation = DataComparer.Correlation(parameter1, parameter2);            
+            parameter1 = null;
+            parameter2 = null;
+            MessageBox.Show(String.Format("Correlation is equal to {0}", correlation));
+            PlotData plot = new PlotData(Out,streamID);//.ShowDialog();
+            DialogResult thisPlot = plot.ShowDialog();
+            if (thisPlot != DialogResult.OK)
+            {
+                Out = null;
+            }
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            plot.Dispose();            
+        }
         private void GetNewGraph()
         {
             try
             {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 if (checkBox6.Checked)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
@@ -290,11 +346,12 @@ namespace Plot_iNET_X
                 MessageBox.Show(ex.ToString());
             }
         }
-
         private static void getUDPPayloads(Object stateInfo)
         {
             PacketParser.getUDPPayloads();
         }
+
+
 
         private static void OpenFile(string type)
         {
@@ -607,6 +664,10 @@ namespace Plot_iNET_X
 
 
         }
+
+
+
+
 
 
 

@@ -29,6 +29,7 @@ namespace Plot_iNET_X
         public static bool usePTP = false;
         public static bool useDumpFiles = false;
         public static bool usePCAP = false;
+        public static bool useCompare = false;
 
         //file counters for output reports --TODO
         public static string errorFile;
@@ -67,7 +68,6 @@ namespace Plot_iNET_X
         
         public static string filepcap_TMP { get; set; }
         public static string fileDump = null;
-
         public static string[] fileDump_list { get; set; }
     }
 }

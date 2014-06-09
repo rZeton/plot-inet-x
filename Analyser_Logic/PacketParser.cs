@@ -8,8 +8,78 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace Plot_iNET_X.Analyser_Logic
 {
+   public static class DataComparer
+   {
+       public static Double Correlation(Double[] Xs, Double[] Ys)
+       {
+           Double sumX = 0;
+           Double sumX2 = 0;
+           Double sumY = 0;
+           Double sumY2 = 0;
+           Double sumXY = 0;
+
+           int n = Xs.Length < Ys.Length ? Xs.Length : Ys.Length;
+
+           for (int i = 0; i < n; ++i)
+           {
+               Double x = Xs[i];
+               Double y = Ys[i];
+
+               sumX += x;
+               sumX2 += x * x;
+               sumY += y;
+               sumY2 += y * y;
+               sumXY += x * y;
+           }
+
+           Double stdX = Math.Sqrt(sumX2 / n - sumX * sumX / n / n);
+           Double stdY = Math.Sqrt(sumY2 / n - sumY * sumY / n / n);
+           Double covariance = (sumXY / n - sumX * sumY / n / n);
+
+           return covariance / stdX / stdY;
+       }
+       public static double[] getRatio(double[] param1, double[] param2)
+       {
+           int n = param1.Length < param2.Length ? param1.Length : param2.Length;
+           double[] Out = new double[n];
+           for (int i = 0; i != Out.Length; i++)
+           {
+               Out[i] = param1[i] / param2[i];
+           }
+           return Out;
+       }
+
+
+       public static double[] LoadTempData(int stream, string parName)
+       {
+           BinaryReader Reader = null;
+           string Name = Array.Find(Globals.fileDump_list, element => element.Contains(String.Format("{0}_{1}", stream,parName)));
+           //string Name = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+           
+           double[] data = null;
+           try
+           {
+               Reader = new BinaryReader(File.Open(Name, FileMode.Open));
+               int size = (int)(Reader.BaseStream.Length / 8); //divide by 8 to get number of doubles? /Unsafe.            
+               data = new double[size + 1];
+               for (int i = 0; i != size; i++)
+                   data[i] = Reader.ReadDouble();
+               Reader.Close();
+           }
+           catch (Exception e)
+           {
+               LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
+               return null;
+           }
+           return data;
+       }
+   }
+
+
+
     public static class PacketParser
     {
         private static List<int> streamID {get;set;}       
