@@ -102,10 +102,11 @@
             this.checkBox8.ForeColor = System.Drawing.SystemColors.ControlText;
             this.checkBox8.Location = new System.Drawing.Point(6, 83);
             this.checkBox8.Name = "checkBox8";
-            this.checkBox8.Size = new System.Drawing.Size(127, 17);
+            this.checkBox8.Size = new System.Drawing.Size(172, 17);
             this.checkBox8.TabIndex = 7;
-            this.checkBox8.Text = "Downsample - TODO";
+            this.checkBox8.Text = "Downsample 1/5 Now - TODO";
             this.checkBox8.UseVisualStyleBackColor = true;
+            this.checkBox8.CheckedChanged += new System.EventHandler(this.checkBox8_CheckedChanged);
             // 
             // checkBox3
             // 

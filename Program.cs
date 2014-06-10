@@ -30,6 +30,11 @@ namespace Plot_iNET_X
         public static bool useDumpFiles = false;
         public static bool usePCAP = false;
         public static bool useCompare = false;
+        
+        //downsampling
+        public static bool useDownsample = false;
+        public static uint sampleCnt = 5;
+
 
         //file counters for output reports --TODO
         public static string errorFile;

@@ -39,6 +39,7 @@ namespace Plot_iNET_X
             _logWindow = new LogWindow();
             Thread logWindow = new Thread(() => _logWindow.ShowDialog());
             //Thread logWindow = new Thread(() => new ErrorSummaryWindow().ShowDialog());
+            logWindow.Name = "Log Window Thread";
             logWindow.Priority = ThreadPriority.BelowNormal;
             logWindow.IsBackground = true;
             logWindow.Start();
@@ -80,6 +81,15 @@ namespace Plot_iNET_X
             {
                 Globals.useDumpFiles = false;
             }
+        }
+        private void checkBox8_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox8.Checked)
+            {
+                Globals.useDownsample = true;
+            }
+            else Globals.useDownsample = false;
+        
         }
         
         //GUI Events
@@ -293,7 +303,7 @@ namespace Plot_iNET_X
             {
                 Out = null;
             }
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
             plot.Dispose();            
         }
         
@@ -301,7 +311,7 @@ namespace Plot_iNET_X
         {
             try
             {
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 if (checkBox6.Checked)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
@@ -345,6 +355,7 @@ namespace Plot_iNET_X
                 Thread t1 = null;
                 if (Globals.useDumpFiles) t1 = new Thread(() => new PlotData(streamID, "dumpFile").ShowDialog());
                 else t1 = new Thread(() => new PlotData(streamID).ShowDialog());
+                t1.Name = DateTime.Now.ToString();
                 t1.Priority = ThreadPriority.Highest;
                 t1.IsBackground = true;
                 t1.Start();
@@ -359,7 +370,7 @@ namespace Plot_iNET_X
         {
             try
             {
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+                //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 if (checkBox6.Checked)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
@@ -412,14 +423,14 @@ namespace Plot_iNET_X
                 MessageBox.Show(ex.ToString());
             }
         }
-        private static void getUDPPayloads(Object stateInfo)
+        private void getUDPPayloads(Object stateInfo)
         {
             PacketParser.getUDPPayloads();
         }
 
 
 
-        private static void OpenFile(string type)
+        private void OpenFile(string type)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
             FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
@@ -730,6 +741,8 @@ namespace Plot_iNET_X
 
 
         }
+
+
 
 
 
