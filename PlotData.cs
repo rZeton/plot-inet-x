@@ -443,6 +443,9 @@ public partial class PlotData : Form
                     double[] x = new double[previousLen];
                     double[] y = new double[previousLen];
 
+                    /// Below Logic looks like crap
+                    /// Possible errors (loosing last million in dat file) and ineficient code
+                    /// TOFIX
                     if (firstTime[stream] == false)
                     {
                         if (fileCnt == 1)

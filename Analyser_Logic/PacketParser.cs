@@ -52,7 +52,48 @@ namespace Plot_iNET_X.Analyser_Logic
            return Out;
        }
 
+      
 
+       public static void SaveToCSV(Dictionary<string,double[]> data)
+       {
+        StreamWriter Writer = null;
+        
+        //string Name = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+        string Name = Globals.fileCSV;
+        try
+        {
+            // Create a new stream to write to the file
+            FileStream fs = new FileStream(Name, FileMode.Append);
+            Writer = new StreamWriter(fs);//new BinaryWriter(fs, new UTF8Encoding(false));
+            //var data = streamData[stream][parName];
+            // Writer raw data  
+            int size = data.First().Value.Length;
+            StringBuilder line = new StringBuilder();
+            foreach(string parName in data.Keys)
+            {
+                line.AppendFormat("{0},",parName);
+            }
+            line.Append("\n");
+            Writer.Write(line.ToString());
+            for (int i = 0; i != size; i++)
+            {
+                line.Clear();
+                foreach (string parName in data.Keys) //not safe
+                {
+                    line.AppendFormat("{0},", data[parName][i]);
+                }
+                line.Append("\n");
+                Writer.Write(line.ToString());
+            } 
+            Writer.Flush();
+            Writer.Close();
+        }
+        catch (Exception e)
+        {
+            LogItems.addParsingError(String.Format("File not found or something went bad trying to save into{0}\nsee below\n{1}", Name, e.Message));
+            return;        
+        }
+       }
        public static double[] LoadTempData(int stream, string parName)
        {
            BinaryReader Reader = null;
@@ -74,6 +115,42 @@ namespace Plot_iNET_X.Analyser_Logic
                LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
                return null;
            }
+           return data;
+       }
+
+       internal static double[] LoadTempData(int stream, string parName, string p)
+       {
+           BinaryReader Reader = null;
+           string Name = Array.Find(Globals.fileDump_list, element => element.Contains(String.Format("{0}_{1}", stream,parName)));
+           //string Name = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+           
+           double[] data = null;
+           int size;
+           uint writeCnt;
+           try
+           {   
+               Reader = new BinaryReader(File.Open(Name, FileMode.Open));
+               size = (int)(Reader.BaseStream.Length / 8); //divide by 8 to get number of doubles? /Unsafe.            
+               uint samplingRate = (uint)size / 30000; // Excel has limit of 32000 per 2D plot.. just to keep it fast.
+               data = new double[30500]; //extra space
+               writeCnt = 0;
+               double value = 0;
+               for (int i = 0; i != size; i++)
+               {
+                   value = Reader.ReadDouble();
+                   if (i % samplingRate == 0)
+                   {
+                       data[writeCnt++] = value;
+                   }
+               }
+               Reader.Close();
+           }
+           catch (Exception e)
+           {
+               LogItems.addParsingError(String.Format("File not found or something..{0}\nsee below\n{1}", Name, e.Message));
+               return null;
+           }
+           LogItems.addStreamInfo(String.Format("File {0} parsed, {1} items found, {2} used\n", Name, size,writeCnt));
            return data;
        }
    }

@@ -40,10 +40,10 @@ namespace Plot_iNET_X
         public static string errorFile;
         public static int errorFileCnt;
         
-        public static Dictionary<int, uint> streamLength;
         public static string filePCAP { get; set; }
         public static string[] filePCAP_list { get; set; }
         public static string limitfile { get; set; }
+        public static string fileCSV { get; set; }
 
         //statistics
         public static UInt32 fileSize { get; set; }
@@ -54,7 +54,7 @@ namespace Plot_iNET_X
         public static StringBuilder errorMsg { get; set; }
         public static StringBuilder streamMsg { get; set; }    
 
-        //stats error counters           
+        //stats error counters                   
         public static Dictionary<int, Dictionary<string, uint>> parError { get; set; }
         public static int totalErrors { get; set; }
         public static Dictionary<int, Dictionary<string, uint>> packetErrors { get; set; }
@@ -64,6 +64,7 @@ namespace Plot_iNET_X
         public const int inetStart = 0; //0 for udps
 
         //Parameter data holders
+        public static Dictionary<int, uint> streamLength;
         public static Dictionary<string, limitPCAP_Derrived> limitPCAP_derrived {get;set;}//; //Dictionary<String,double[]>> limitPCAP_derrived {get;set;}
         public static Dictionary<int, Dictionary<string, double[]>> limitPCAP { get; set; }
         public static Dictionary<int, List<string>> channelsSelected { get; set; }
@@ -74,5 +75,6 @@ namespace Plot_iNET_X
         public static string filepcap_TMP { get; set; }
         public static string fileDump = null;
         public static string[] fileDump_list { get; set; }
+
     }
 }

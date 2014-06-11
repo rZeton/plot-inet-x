@@ -60,6 +60,7 @@
             this.button5 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
+            this.button7 = new System.Windows.Forms.Button();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.panel1.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -79,7 +80,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(595, 287);
+            this.panel1.Size = new System.Drawing.Size(627, 287);
             this.panel1.TabIndex = 1;
             // 
             // groupBox3
@@ -167,7 +168,7 @@
             this.toolStripStatusLabel5});
             this.statusStrip1.Location = new System.Drawing.Point(0, 265);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(595, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(627, 22);
             this.statusStrip1.TabIndex = 4;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -242,7 +243,7 @@
             this.groupBox2.Controls.Add(this.label3);
             this.groupBox2.Location = new System.Drawing.Point(251, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(341, 153);
+            this.groupBox2.Size = new System.Drawing.Size(364, 148);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Selected Files Info";
@@ -250,7 +251,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 111);
+            this.label1.Location = new System.Drawing.Point(6, 103);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(85, 13);
             this.label1.TabIndex = 4;
@@ -339,9 +340,10 @@
             this.flowLayoutPanel1.Controls.Add(this.button5);
             this.flowLayoutPanel1.Controls.Add(this.button1);
             this.flowLayoutPanel1.Controls.Add(this.button6);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(251, 165);
+            this.flowLayoutPanel1.Controls.Add(this.button7);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(251, 160);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(341, 97);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(364, 102);
             this.flowLayoutPanel1.TabIndex = 1;
             // 
             // button2
@@ -387,13 +389,23 @@
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(3, 51);
+            this.button6.Location = new System.Drawing.Point(281, 3);
             this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(72, 42);
+            this.button6.Size = new System.Drawing.Size(70, 42);
             this.button6.TabIndex = 5;
-            this.button6.Text = "Draw ratio";
+            this.button6.Text = "Draw Ratio";
             this.button6.UseVisualStyleBackColor = true;
             this.button6.Click += new System.EventHandler(this.button6_Click);
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(3, 51);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(61, 41);
+            this.button7.TabIndex = 6;
+            this.button7.Text = "Save To CSV";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // backgroundWorker1
             // 
@@ -404,7 +416,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(595, 287);
+            this.ClientSize = new System.Drawing.Size(627, 287);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -460,6 +472,7 @@
         private System.Windows.Forms.CheckBox checkBox7;
         private System.Windows.Forms.CheckBox checkBox8;
         private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button button7;
 
     }
 }

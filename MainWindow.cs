@@ -161,6 +161,37 @@ namespace Plot_iNET_X
             //plot.SetApartmentState(ApartmentState.STA);
             //plot.Start();
         }
+        private void button7_Click(object sender, EventArgs e)
+        {
+            OpenFile("CSV");
+            ThreadPool.QueueUserWorkItem(new WaitCallback(SaveToCSV));
+        }
+
+        private void SaveToCSV(object state)
+        {
+            selChanObj = new selectChannel("dump");
+
+            List<int> streamID = new List<int>();
+
+            //double[][] dataOut = new double[Globals.channelsSelected.Count][];
+            //string[][] parNames = new string[Globals.channelsSelected.Count][];
+            Dictionary<string, double[]> dataOut = new Dictionary<string,double[]>();
+            int streamCnt = 0;
+            foreach (int stream in Globals.channelsSelected.Keys)
+            {
+                if (Globals.channelsSelected[stream].Count != 0)
+                {
+                    streamID.Add(stream);                    
+                    foreach (string parName in Globals.channelsSelected[stream])
+                    {
+                        dataOut[parName] = DataComparer.LoadTempData(stream,parName,"reduced");//new double[65536];
+                    }
+                }
+            }
+
+            DataComparer.SaveToCSV(dataOut);
+        }
+
 
         private void button3_Click(object sender, EventArgs e)
         {
@@ -460,6 +491,18 @@ namespace Plot_iNET_X
                 case ("limit"):
                     openFileDialog1.Filter = "Configuration Output(.csv)|*.csv|All Files (*.*)|*.*";
                     break;
+                case ("CSV"):
+                    output.Title = "Select CSV file to dump the data";
+                    output.Filter = "CSV Dump File (.csv)|*.csv;*.tsv|All Files (*.*)|*.*";                    
+                    DialogResult csvRes = output.ShowDialog();
+                    if (output.FileName != "")
+                    {
+                        Globals.fileCSV = output.FileName.ToString();
+                    }
+                    else { Globals.fileCSV = "CSV_Dump_File.csv"; }
+                    if (csvRes == DialogResult.Cancel) { Globals.fileCSV = "CSV_Dump_File.csv"; }
+                    return;
+                    break;
                 case ("error"):
                     output.Filter = "Error Log Output(.csv)|*.csv|All Files (*.*)|*.*";
                     output.FilterIndex = 2;
@@ -741,6 +784,8 @@ namespace Plot_iNET_X
 
 
         }
+
+
 
 
 
