@@ -33,7 +33,7 @@ namespace Plot_iNET_X
         
         //downsampling
         public static bool useDownsample = false;
-        public static uint sampleCnt = 5;
+        public static uint sampleCnt = 15;
 
 
         //file counters for output reports --TODO

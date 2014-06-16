@@ -131,8 +131,8 @@ namespace Plot_iNET_X.Analyser_Logic
            {   
                Reader = new BinaryReader(File.Open(Name, FileMode.Open));
                size = (int)(Reader.BaseStream.Length / 8); //divide by 8 to get number of doubles? /Unsafe.            
-               uint samplingRate = (uint)size / 30000; // Excel has limit of 32000 per 2D plot.. just to keep it fast.
-               data = new double[30500]; //extra space
+               uint samplingRate = (uint)size / 3650; // Excel has limit of 32000 per 2D plot.. just to keep it fast.
+               data = new double[3700]; //extra space
                writeCnt = 0;
                double value = 0;
                for (int i = 0; i != size; i++)
@@ -364,7 +364,7 @@ namespace Plot_iNET_X.Analyser_Logic
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             /*
-            * Parallel could be a HDD killer for big lists
+            * Parallel could be a HDD killer for big lists, with great speed gain on SSDs
             * 
             * 
             */

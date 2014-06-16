@@ -492,7 +492,7 @@ public partial class PlotData : Form
                         dataToPlot[stream][parName] = new FilteredPointList(x, y);
                         dataTMP = null;
                     }
-                    else if (cnt > 1000000) //store into file if 1 million points
+                    else if (cnt > 200000) //store into file if 1 million points
                     {
                         //save.Start();
                         SaveTempData(stream, parName, y);
@@ -870,6 +870,7 @@ public partial class PlotData : Form
     
     
 //OLD    
+
     private void parsePacket(Packet packet)
     {
         int stream;
@@ -1058,38 +1059,50 @@ public partial class PlotData : Form
     }
 
 
-    //parse method using arrays -- TODO fix other types than analog.
+    //parse method using arrays -- To TEST
     private void parsePacket2(Packet packet)
     {
         int stream;
         if (packet.Length < 64)
         {
-            return; //broken packet
+            return; // No UDP header => broken packet
         }
         if ((packet.Ethernet.EtherType == PcapDotNet.Packets.Ethernet.EthernetType.IpV4) && (packet.Ethernet.IpV4.Udp.Length != 0))
         {
             frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
-            if (frame.Length < 28) return; //check correctness of UDP payload = -1;
-            else stream = (int)frame.ReadUInt(Globals.inetStart + 4,Endianity.Big);//((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
-            if (!streamID.Contains(stream)) //ignore streams not selected
-            {
-                //this shall never happen?
+            if (frame.Length < 28) return; //iNET-X header broken
+            else stream = (int)frame.ReadUInt(Globals.inetStart + 4, Endianity.Big);
+
+            if (!streamID.Contains(stream)) //ignore streams not described in config CSV
+            {                
                 //Globals.totalErrors++;
                 //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
                 return;
             }
-            if (frame.Length < Globals.streamLength[stream]) return;
-            //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
+
+            if (frame.Length < Globals.streamLength[stream]) // ignore uncomplete iNET-X payload
+            {
+                var msg = String.Format("Broken iNET-X Payload -> {0} != {1}", frame.Length, Globals.streamLength[stream]); //might be slowing down with a lot of errors
+                LogItems.addParsingError(msg);
+                return; 
+            }        
 
             uint i = 0;
             uint parPos, parCnt, parOccurences, parPosTmp;
             uint parType = 0;
             double value = 0.0;
-            Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
-            int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
-            Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
+            //Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
+            //int streamCnt = (int)limit[limit.Keys.First()][1];
+            //double[][] limitA = new double[Globals.limitArray[0].Length][];
+            //limitA = Globals.limitArray[0];
+            //Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
+
+            Dictionary<string, double[]> limit = Globals.limitPCAP[stream]; //get parameters from this stream only.
+            int streamCnt = (int)limit[limit.Keys.First()][1];  //get the stream position in the array.
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][]; //create local array lookup with a size of the stream
+            limitA = Globals.limitArray[streamCnt];
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived; //to handle derrived params
+
             foreach (string parName in Globals.channelsSelected[stream])
             {                
                 parCnt = (uint)(limit[parName][3]);
@@ -1235,7 +1248,7 @@ public partial class PlotData : Form
                             }
                         }
                         break;
-                    default:
+                    default: //to convert hex to decimal 0-65535
                         for (int parOccur = 0; parOccur != parOccurences; parOccur++)
                         {
                             parPosTmp = (uint)(parPos + parOccur * 2);
@@ -1249,46 +1262,57 @@ public partial class PlotData : Form
         }
         Globals.totalFrames++;
     }
-
+    /// <summary>
+    /// To parse every X packet
+    /// </summary>
+    /// <param name="packet"></param>
     private void parsePacketDownSampled(Packet packet)
     {
         int stream;
         if (packet.Length < 64)
         {
-            return; //broken packet
+            return; // No UDP header => broken packet
         }
         if ((packet.Ethernet.EtherType == PcapDotNet.Packets.Ethernet.EthernetType.IpV4) && (packet.Ethernet.IpV4.Udp.Length != 0))
         {
             frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
-            if (frame.Length < 28) return; //check correctness of UDP payload = -1;
-            else stream = (int)frame.ReadUInt(Globals.inetStart + 4, Endianity.Big);//((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
-            if (!streamID.Contains(stream)) //ignore streams not selected
-            {
-                //this shall never happen?
+            if (frame.Length < 28) return; //iNET-X header broken
+            else stream = (int)frame.ReadUInt(Globals.inetStart + 4, Endianity.Big);
+
+            if (!streamID.Contains(stream)) //ignore streams not described in config CSV
+            {                
                 //Globals.totalErrors++;
                 //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
                 return;
             }
-            if (frame.Length < Globals.streamLength[stream]) return;
-            //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
+
+            if (frame.Length < Globals.streamLength[stream]) // ignore broken iNET-X payload
+            {
+                var msg = String.Format("Broken iNET-X Payload -> {0} != {1}", frame.Length, Globals.streamLength[stream]); //might be slowing down.
+                LogItems.addParsingError(msg);
+                return; 
+            }
+
             Globals.sampleCnt--;
             if (Globals.sampleCnt == 0)
             {
-                Globals.sampleCnt = 5;                
+                Globals.sampleCnt = 15;                
             }
             else
             {
                 return;
             }
+
             uint i = 0;
             uint parPos, parCnt, parOccurences, parPosTmp;
             uint parType = 0;
             double value = 0.0;
-            Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
-            int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
-            Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
+            Dictionary<string, double[]> limit = Globals.limitPCAP[stream]; //get parameters from this stream only.
+            int streamCnt = (int)limit[limit.Keys.First()][1];  //get the stream position in the array.
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][]; //create local array lookup with a size of the stream
+            limitA = Globals.limitArray[streamCnt];
+            Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived; //to handle derrived params
+
             foreach (string parName in Globals.channelsSelected[stream])
             {
                 parCnt = (uint)(limit[parName][3]);
@@ -1842,26 +1866,6 @@ public partial class PlotData : Form
     
     
     
-    //Check file access
-    public static bool IsFileLocked(FileInfo file)
-    {
-        FileStream stream = null;
-
-        try
-        {
-            stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        }
-        catch (IOException)
-        {
-            return true;
-        }
-        finally
-        {
-            if (stream != null)
-                stream.Close();
-        }
-        return false;
-    }
 
     private void ClosePlot(object sender, FormClosingEventArgs e)
     {          
