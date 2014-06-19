@@ -27,6 +27,8 @@ public partial class PlotData : Form
     private Dictionary<int, Dictionary<string, List<double>>> streamData;
     private Dictionary<int, Dictionary<string, FilteredPointList>> dataToPlot;
     private double[] singleData = null;
+    private Dictionary<int, List<string>> channelsSelected;
+    private UInt64 startPTP;
 
     public PlotData()
     {
@@ -38,6 +40,7 @@ public partial class PlotData : Form
         try
         {
             streamID = streamlist;// new List<int> { 300 };
+            channelsSelected = new Dictionary<int, List<string>>(Globals.channelsSelected);
             streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
             dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
             Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
@@ -59,10 +62,10 @@ public partial class PlotData : Form
                     Globals.parError[stream][parName] = 0;
                 }
 
-                if (Globals.channelsSelected[stream].Count != 0)
+                if (channelsSelected[stream].Count != 0)
                 {
                     streamData[stream] = new Dictionary<string, List<double>>();
-                    foreach (string parName in Globals.channelsSelected[stream])
+                    foreach (string parName in channelsSelected[stream])
                     {
                         streamData[stream][parName] = new List<double>();
                     }
@@ -88,7 +91,8 @@ public partial class PlotData : Form
     #region Initialize_Globals
         try
         {
-            streamID = streamInput;            
+            streamID = streamInput;
+            this.channelsSelected = new Dictionary<int,List<string>>(Globals.channelsSelected);
             streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
             dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
             Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
@@ -111,10 +115,10 @@ public partial class PlotData : Form
                     Globals.parError[stream][parName] = 0;
                 }
 
-                if (Globals.channelsSelected[stream].Count != 0)
+                if (channelsSelected[stream].Count != 0)
                 {
                     streamData[stream] = new Dictionary<string, List<double>>();
-                    foreach (string parName in Globals.channelsSelected[stream])
+                    foreach (string parName in channelsSelected[stream])
                     {
                         streamData[stream][parName] = new List<double>();
                         cntChannels++;
@@ -123,11 +127,11 @@ public partial class PlotData : Form
 
             }
             Globals.fileDump_list = new string[cntChannels];
-            foreach(int stream in Globals.channelsSelected.Keys)
+            foreach(int stream in channelsSelected.Keys)
             {
-                if (Globals.channelsSelected[stream].Count != 0)
+                if (channelsSelected[stream].Count != 0)
                 {
-                    foreach (string parName in Globals.channelsSelected[stream])
+                    foreach (string parName in channelsSelected[stream])
                     {
                         Globals.fileDump_list[--cntChannels] = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
                     }
@@ -159,6 +163,7 @@ public partial class PlotData : Form
         try
         {
             this.streamID = streamInput;
+            this.channelsSelected = new Dictionary<int, List<string>>(Globals.channelsSelected);
             this.streamData = new Dictionary<int, Dictionary<string, List<double>>>(streamID.Count);
             this.dataToPlot = new Dictionary<int, Dictionary<string, FilteredPointList>>(streamID.Count);
             Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
@@ -180,10 +185,10 @@ public partial class PlotData : Form
                     Globals.parError[stream][parName] = 0;
                 }
 
-                if (Globals.channelsSelected[stream].Count != 0)
+                if (channelsSelected[stream].Count != 0)
                 {
                     streamData[stream] = new Dictionary<string, List<double>>();
-                    foreach (string parName in Globals.channelsSelected[stream])
+                    foreach (string parName in channelsSelected[stream])
                     {
                         streamData[stream][parName] = new List<double>();
                     }
@@ -316,6 +321,7 @@ public partial class PlotData : Form
             }
             dataToPlot[streamID.First()]["ComparedData"] = new FilteredPointList(x, singleData);
             singleData = null;
+            x = null;
             sw2.Stop();
             CreateGraph(zedGraphControl1, streamID.First(), "plotCompare");
         }
@@ -346,6 +352,7 @@ public partial class PlotData : Form
             Globals.filePCAP_list = new string[1]{Globals.filePCAP};
             sw2.Start();
             iteratePcaps();
+            //iteratePcaps_Para();
             sw2.Stop();
             foreach (int stream in streamID)
             {
@@ -358,6 +365,7 @@ public partial class PlotData : Form
         {
             Thread logWindow = new Thread(() => new ErrorSummaryWindow().ShowDialog());
             logWindow.Priority = ThreadPriority.BelowNormal;
+            logWindow.Name = "Error Summary Thread";
             logWindow.IsBackground = true;
             logWindow.Start();
         }
@@ -374,7 +382,7 @@ public partial class PlotData : Form
     {
         foreach(int stream in streamID)
         {            
-            foreach(string parName in Globals.channelsSelected[stream])
+            foreach(string parName in channelsSelected[stream])
             {
                 double[] y = LoadTempData(stream, parName);
                 long size = y.LongLength;
@@ -415,7 +423,7 @@ public partial class PlotData : Form
             foreach (int stream in streamData.Keys)
             {
                 Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
-                if (Globals.channelsSelected[stream].Count == 0) continue;
+                if (channelsSelected[stream].Count == 0) continue;
                 foreach (string parName in streamData[stream].Keys)
                 {
                     dataPcap_tmp[parName] = streamData[stream][parName].ToArray();
@@ -451,6 +459,11 @@ public partial class PlotData : Form
                         if (fileCnt == 1)
                         {
                             int dataSize = dataTMP.Length;
+                            //Buffer.BlockCopy(dataTMP, 0, y, dataSize, dataTMP.Length * sizeof(double));
+                            //Array.Copy(dataTMP, 0, y, 0, dataTMP.Length);
+                            //System.Collections.IEnumerator xEnum = dataTMP.GetEnumerator();
+                            //x = Enumerable.Range(0,dataSize).Select(item => (double)item).ToArray<double>();
+                            //cnt = (uint)dataSize-1;
                             for (int i = 0; i != dataSize; i++)
                             {
                                 x[cnt] = cnt;
@@ -488,11 +501,11 @@ public partial class PlotData : Form
                     dataToPlot[stream][parName] = null;                 
                     
                     if (fileCnt==1)
-                    {
+                    {                        
                         dataToPlot[stream][parName] = new FilteredPointList(x, y);
                         dataTMP = null;
                     }
-                    else if (cnt > 200000) //store into file if 1 million points
+                    else if (cnt > 200000) //store into file if 200000 million points
                     {
                         //save.Start();
                         SaveTempData(stream, parName, y);
@@ -517,6 +530,146 @@ public partial class PlotData : Form
                 //streamData[stream].Clear();
             }
             fileCnt--;            
+        }
+
+    }
+
+    private void iteratePcaps_Para()
+    {
+        Dictionary<int, bool> firstTime = new Dictionary<int, bool>(streamData.Count);
+        Dictionary<int, Dictionary<string, bool>> storedData = new Dictionary<int, Dictionary<string, bool>>(streamData.Count);
+        foreach (int e in streamData.Keys)
+        {
+            firstTime[e] = true;
+            storedData[e] = new Dictionary<string, bool>();
+            foreach (string parName in streamData[e].Keys)
+            {
+                storedData[e][parName] = false;
+            }
+        }
+        System.Diagnostics.Stopwatch save = new System.Diagnostics.Stopwatch();
+        int fileCnt = Globals.filePCAP_list.Length;
+        double[] dataTMP = null;
+        foreach (string p in Globals.filePCAP_list)
+        {
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            //Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+            LogItems.addStreamInfo(String.Format("Starting to parse {0}", p));
+            if (Globals.useDownsample) LoadDataDownSampled(p);
+            else LoadData(p);
+            System.Threading.Tasks.Parallel.ForEach(streamData, streamPair =>
+            {
+                int stream = streamPair.Key;
+                Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
+                if (channelsSelected[stream].Count != 0)
+                {
+                    foreach (string parName in streamData[stream].Keys)
+                    {
+                        dataPcap_tmp[parName] = streamData[stream][parName].ToArray();
+                        streamData[stream][parName].Clear();
+                        //int len=0;
+                        int previousLen = 0;
+                        if (firstTime[stream]) previousLen = dataPcap_tmp[parName].Length;
+                        else
+                        {
+                            if (fileCnt == 1)
+                            {
+                                dataTMP = LoadTempData(stream, parName);
+                                if (storedData[stream][parName] == false) previousLen = dataToPlot[stream][parName].Count;
+                                previousLen = previousLen + dataTMP.Length + dataPcap_tmp[parName].Length;
+                            }
+                            else if (storedData[stream][parName] == false)
+                            {
+                                previousLen = dataToPlot[stream][parName].Count;
+                                previousLen = previousLen + dataPcap_tmp[parName].Length;
+                            }
+                            else previousLen = dataPcap_tmp[parName].Length;
+                        }
+
+                        uint cnt = 0;
+                        double[] x = new double[previousLen];
+                        double[] y = new double[previousLen];
+
+                        /// Below Logic looks like crap
+                        /// Possible errors (loosing last million in dat file) and ineficient code
+                        /// TOFIX
+                        if (firstTime[stream] == false)
+                        {
+                            if (fileCnt == 1)
+                            {
+                                int dataSize = dataTMP.Length;
+                                //Buffer.BlockCopy(dataTMP, 0, y, dataSize, dataTMP.Length * sizeof(double));
+                                //Array.Copy(dataTMP, 0, y, 0, dataTMP.Length);
+                                //System.Collections.IEnumerator xEnum = dataTMP.GetEnumerator();
+                                //x = Enumerable.Range(0,dataSize).Select(item => (double)item).ToArray<double>();
+                                //cnt = (uint)dataSize-1;
+                                for (int i = 0; i != dataSize; i++)
+                                {
+                                    x[cnt] = cnt;
+                                    y[cnt] = dataTMP[i];
+                                    cnt++;
+                                }
+                            }
+                            if (storedData[stream][parName] == false)
+                            {
+                                int dataSize = dataToPlot[stream][parName].Count;
+                                for (int i = 0; i != dataSize; i++)
+                                {
+                                    x[cnt] = cnt;
+                                    y[cnt] = dataToPlot[stream][parName][i].Y;
+                                    cnt++;
+                                }
+                            }
+                            //previousLen = x.Length;                            
+                            foreach (double dataItem in dataPcap_tmp[parName])
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataItem;
+                                cnt++;
+                            }
+                        }
+                        else
+                        {
+                            foreach (double dataItem in dataPcap_tmp[parName])
+                            {
+                                x[cnt] = cnt;
+                                y[cnt] = dataItem;
+                                cnt++;
+                            }
+                        }
+                        dataToPlot[stream][parName] = null;
+
+                        if (fileCnt == 1)
+                        {
+                            dataToPlot[stream][parName] = new FilteredPointList(x, y);
+                            dataTMP = null;
+                        }
+                        else if (cnt > 200000) //store into file if 200000 million points
+                        {
+                            //save.Start();
+                            SaveTempData(stream, parName, y);
+                            //save.Stop();
+                            //MessageBox.Show(save.Elapsed.ToString());
+                            //save.Restart();
+                            storedData[stream][parName] = true;
+                            //double[] data = LoadTempData(stream, parName);
+                            //save.Stop();
+                            //MessageBox.Show(save.Elapsed.ToString());
+                        }
+                        else
+                        {
+                            dataToPlot[stream][parName] = new FilteredPointList(x, y);
+                            storedData[stream][parName] = false;
+                        }
+                        y = null;
+                        //streamData[stream][parName].Clear();                    
+                    }
+                    //dataToPlot[parName] = dataTMP;
+                    firstTime[stream] = false;
+                    //streamData[stream].Clear();
+                }
+            });
+            fileCnt--;
         }
 
     }
@@ -584,7 +737,7 @@ public partial class PlotData : Form
             foreach (int stream in streamData.Keys)
             {
                 Dictionary<string, double[]> dataPcap_tmp = new Dictionary<string, double[]>();
-                if (Globals.channelsSelected[stream].Count==0) continue;
+                if (channelsSelected[stream].Count==0) continue;
                 foreach (string parName in streamData[stream].Keys)
                 {
                     dataPcap_tmp[parName] = streamData[stream][parName].ToArray();
@@ -770,6 +923,7 @@ public partial class PlotData : Form
             {
                 //communicator.ReceiveSomePackets(out pktCnt, 10, parsePacketParrallel);
                 communicator.ReceivePackets(0, parsePacketDownSampled);
+                //communicator.ReceivePackets(0, parsePacketPTP);
             }
         }
         catch (Exception e)
@@ -784,12 +938,12 @@ public partial class PlotData : Form
         try
         {
             int pktCnt;
-            using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,                                  // portion of the packet to capture
-                // 65536 guarantees that the whole packet will be captured on all the link layers
+            using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,
                                     PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
                                     1000))     // read timeout
             {
                 communicator.ReceivePackets(0,parsePacket2);
+                //communicator.ReceivePackets(0, parsePacketPTP);
                 //communicator.ReceiveSomePackets(out pktCnt, -1, parsePacketParrallel);
             }
             //}
@@ -799,77 +953,7 @@ public partial class PlotData : Form
             MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
                 pcapfile, e.ToString()));
         }            
-    }
-
-    //public static Dictionary<string, RollingPointPairList> LoadData(int streamID)
-    //{
-    //    Dictionary<string, double[]> streamParameters = Globals.limitPCAP[streamID];
-    //    streamData.Clear();
-    //    try
-    //    {
-    //        //while (IsFileLocked(new FileInfo(Globals.filePCAP)))
-    //        //{
-    //        //    System.Threading.Thread.Sleep(100);
-    //        //}
-    //        OfflinePacketDevice selectedDevice = new OfflinePacketDevice(Globals.filePCAP);
-
-    //        PacketCommunicator communicator = selectedDevice.Open(65536,                                  // portion of the packet to capture
-    //            // 65536 guarantees that the whole packet will be captured on all the link layers
-    //                                PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
-    //                                1000);                                  // read timeout
-    //        communicator.ReceivePackets(0, parsePacket);
-    //    }
-    //    catch (Exception e)
-    //    {
-    //        MessageBox.Show(String.Format("Cannot open {0} or crashed during parsing, please make sure that file is not in use by other program\nRead the rest of the crash report below\n\n\n{1}",
-    //            Globals.filePCAP, e.ToString()), "Packet parsing error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    //    }
-
-    //    Dictionary<string, RollingPointPairList> DataOut = new Dictionary<string, RollingPointPairList>();
-        
-    //    foreach (string param in streamData.Keys)
-    //    {
-
-    //        if (!DataOut.ContainsKey(param))
-    //        {
-    //            DataOut[param] = new RollingPointPairList(streamData[param].Count);
-    //            double[] x = new double[streamData[param].Count];
-    //            double[] y = new double[streamData[param].Count];
-    //            uint cnt = 0;
-    //            foreach (double dataItem in streamData[param])
-    //            {
-    //                x[cnt] = cnt;
-    //                y[cnt] = dataItem;
-    //                cnt++;
-    //            }
-    //            DataOut[param].Add(x,y);
-    //        }
-    //        else
-    //        {
-    //            DataOut[param].Clear();
-    //            DataOut[param] = new RollingPointPairList(streamData[param].Count);
-    //            double[] x = new double[streamData[param].Count];
-    //            double[] y = new double[streamData[param].Count];
-    //            uint cnt = 0;
-    //            foreach (double dataItem in streamData[param])
-    //            {
-    //                x[cnt] = cnt;
-    //                y[cnt] = dataItem;
-    //                cnt++;
-    //            }
-    //            DataOut[param].Add(x, y);
-
-    //        }
-    //        //DataOut[param] = new RollingPointPairList([555]);
-    //        //DataOut[param] = streamData[param].ToArray();
-    //    }            
-    //    return DataOut;
-    //}             
-
-   
-    
-    
-//OLD    
+    }    
 
     private void parsePacket(Packet packet)
     {
@@ -899,7 +983,8 @@ public partial class PlotData : Form
             double value=0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
-            foreach (string parName in Globals.channelsSelected[stream])
+
+            foreach (string parName in channelsSelected[stream])
             {
                 parPos = (uint)(limit[parName][4]);
                 parCnt = (uint)(limit[parName][3]);
@@ -1102,8 +1187,8 @@ public partial class PlotData : Form
             double[][] limitA = new double[Globals.limitArray[streamCnt].Length][]; //create local array lookup with a size of the stream
             limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived; //to handle derrived params
-
-            foreach (string parName in Globals.channelsSelected[stream])
+            
+            foreach (string parName in channelsSelected[stream])
             {                
                 parCnt = (uint)(limit[parName][3]);
                 parPos = (uint)(limitA[parCnt][4]);
@@ -1256,7 +1341,6 @@ public partial class PlotData : Form
                         }
                         break;
                 } i += 2;
-
                 streamData[stream][parName].Add(value);
             }
         }
@@ -1313,7 +1397,7 @@ public partial class PlotData : Form
             limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived; //to handle derrived params
 
-            foreach (string parName in Globals.channelsSelected[stream])
+            foreach (string parName in channelsSelected[stream])
             {
                 parCnt = (uint)(limit[parName][3]);
                 parPos = (uint)(limitA[parCnt][4]);
@@ -1473,6 +1557,7 @@ public partial class PlotData : Form
     }
 
 
+    // Below are experiments
 
     //not efficient enough - paralell packets maybe.
     private void parsePacketParrallel(Packet packet)
@@ -1506,7 +1591,7 @@ public partial class PlotData : Form
             double[][] limitA = new double[Globals.limitArray[0].Length][];
             limitA = Globals.limitArray[0];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
-            foreach (string parName in Globals.channelsSelected[stream])
+            foreach (string parName in channelsSelected[stream])
             {
                 parCnt = (uint)(limit[parName][3]);
                 parPos = (uint)(limitA[parCnt][4]);
@@ -1688,12 +1773,12 @@ public partial class PlotData : Form
             if (frame.Length < Globals.streamLength[stream]) return;
             //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
             //getValue.getPTPTime(frame[16])
-            UInt64 PTP1;
-            UInt64 PTP2;
-            PTP1 = frame.ReadUInt(16, Endianity.Big);
-            PTP2 = frame.ReadUInt(20, Endianity.Big);
+            UInt64 PTPSeconds;
+            UInt64 PTPNanoseconds;
+            PTPSeconds = frame.ReadUInt(16, Endianity.Big);
+            PTPNanoseconds = frame.ReadUInt(20, Endianity.Big);
 
-            MessageBox.Show(String.Format("{0} == {1}",PTP1,PTP2));
+            MessageBox.Show(String.Format("{0} == {1}", PTPSeconds, PTPNanoseconds));
             uint i = 0;
             uint parPos, parCnt, parOccurences, parPosTmp;
             uint parType = 0;
@@ -1703,7 +1788,7 @@ public partial class PlotData : Form
             double[][] limitA = new double[Globals.limitArray[0].Length][];
             limitA = Globals.limitArray[0];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
-            foreach (string parName in Globals.channelsSelected[stream])
+            foreach (string parName in channelsSelected[stream])
             {
                 parCnt = (uint)(limit[parName][3]);
                 parPos = (uint)(limitA[parCnt][4]);

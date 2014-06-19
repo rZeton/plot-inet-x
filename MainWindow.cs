@@ -24,7 +24,6 @@ namespace Plot_iNET_X
         performanceMonitor pmon;
         private LogWindow _logWindow;
 
-
         public MainWindow()
         {            
             InitializeComponent();
@@ -517,20 +516,7 @@ namespace Plot_iNET_X
                     }
                     else { Globals.errorFile = "error"; }
                     if (resulterror == DialogResult.Cancel) { Globals.errorFile = "error"; }
-                    break;
-                //case ("output"):
-                //    output.Filter = "Data Log Output(.csv)|*.csv|All Files (*.*)|*.*";
-                //    output.FilterIndex = 2;
-                //    output.Title = "Select Data Log location and name";
-                //    DialogResult resultdata = output.ShowDialog();
-                //    if (output.FileName != "")
-                //    {
-                //        Globals.outputFile = output.FileName.ToString();
-                //        Globals.outputFileCnt = 0;
-                //    }
-                //    else { Globals.outputFile = "data"; }
-                //    if (resultdata == DialogResult.Cancel){ Globals.outputFile = "dataOut"; }
-                //    break;
+                    break;                
             }
             if (type == "error") return;
             if (type == "Dump_folder")

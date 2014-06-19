@@ -135,7 +135,6 @@ public partial class ErrorSummaryWindow : Form
 
         // Create TextObj's to provide labels for each bar
         BarItem.CreateBarLabels(myPane, false, "f0");
-
     }
 
 
