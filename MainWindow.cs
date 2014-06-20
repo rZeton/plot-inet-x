@@ -67,6 +67,7 @@ namespace Plot_iNET_X
         {
             Globals.usePTP = !Globals.usePTP;
         }
+
         private void checkBox7_CheckedChanged(object sender, EventArgs e)
         {
             if (checkBox7.Checked)
@@ -152,8 +153,7 @@ namespace Plot_iNET_X
             ThreadPool.QueueUserWorkItem(new WaitCallback(Draw_FFT));
         }
         private void button1_Click(object sender, EventArgs e)
-        {
-            
+        {            
             Globals.useCompare = false;
             ThreadPool.QueueUserWorkItem(new WaitCallback(GetNewGraph));
             //Thread plot = new Thread(new ThreadStart(GetNewGraph));
@@ -165,7 +165,7 @@ namespace Plot_iNET_X
             OpenFile("CSV");
             ThreadPool.QueueUserWorkItem(new WaitCallback(SaveToCSV));
         }
-
+  
         private void SaveToCSV(object state)
         {
             selChanObj = new selectChannel("dump");
@@ -187,7 +187,6 @@ namespace Plot_iNET_X
                     }
                 }
             }
-
             DataComparer.SaveToCSV(dataOut);
         }
 
@@ -347,23 +346,11 @@ namespace Plot_iNET_X
                 if (checkBox6.Checked)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
+                    return;
                 }
                 if (checkBox7.Checked) selChanObj = new selectChannel("from dump");
                 else selChanObj = new selectChannel();
 
-                //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-
-                // TODO parallel streams ?
-                //Parallel.ForEach(Globals.channelsSelected, kvp =>
-                //{
-                //    if (Globals.channelsSelected[kvp.Key].Count != 0)
-                //    {
-                //        GraphPlot = new PlotData(kvp.Key);
-                //        GraphPlot.SuspendLayout();
-                //        GraphPlot.ResumeLayout(false);
-                //        GraphPlot.ShowDialog();
-                //    }
-                //});
 
                 List<int> streamID = new List<int>();
                 foreach (int stream in Globals.channelsSelected.Keys)
@@ -457,7 +444,9 @@ namespace Plot_iNET_X
         }
         private void getUDPPayloads(Object stateInfo)
         {
-            PacketParser.getUDPPayloads();
+            PacketParser parser = new PacketParser();
+            parser.getUDPPayloads();
+            parser = null;
         }
 
 
@@ -785,6 +774,10 @@ namespace Plot_iNET_X
 
 
         }
+
+
+
+
 
 
    }
