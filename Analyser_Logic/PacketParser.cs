@@ -164,7 +164,6 @@ namespace Plot_iNET_X.Analyser_Logic
         private static readonly SemaphoreSlim _sl = new SemaphoreSlim(initialCount: 1);
 
         private byte[] frame;
-
         List<byte[]> frames;
 
         public PacketParser()
@@ -172,6 +171,53 @@ namespace Plot_iNET_X.Analyser_Logic
             this.frame = new byte[65536];
             this.streamData = new Dictionary<int, Dictionary<string, List<double>>>();
             this.streamID = new List<int>();
+            Globals.parError = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.totalErrors = 0;
+            Globals.packetErrors = new Dictionary<int, Dictionary<string, uint>>();
+            Globals.framesReceived = new Dictionary<int, int[]>();
+            Globals.totalFrames = 0;
+            int cntChannels = 0;
+            foreach (int stream in Globals.limitPCAP.Keys)
+            {
+                Globals.packetErrors[stream] = new Dictionary<string, uint>(){
+            {"total",0}, //used for all parameters in that stream
+            {"pktLost",0},
+            {"SEQ",0}};
+                Globals.parError[stream] = new Dictionary<string, uint>();
+                Globals.framesReceived[stream] = new int[4] { 0, 0, 0, 0 };
+                foreach (string parName in Globals.limitPCAP[stream].Keys)
+                {
+                    Globals.parError[stream][parName] = 0;
+                }
+
+                if (Globals.limitPCAP[stream].Count != 0)
+                {
+
+
+                    streamData[stream] = new Dictionary<string, List<double>>();
+                    streamID.Add(stream);
+                    foreach (string parName in Globals.limitPCAP[stream].Keys)
+                    {
+                        streamData[stream][parName] = new List<double>();
+                        cntChannels++;
+                    }
+                }
+            }
+            
+            Globals.fileDump_list = new string[cntChannels];
+            foreach (int stream in Globals.limitPCAP.Keys)
+            {
+                if (Globals.limitPCAP[stream].Count != 0)
+                {
+                    foreach (string parName in Globals.limitPCAP[stream].Keys)
+                    {
+                        Globals.fileDump_list[--cntChannels] = String.Format(@"{0}\{1}_{2}.dat", Globals.fileDump, stream, parName);
+                    }
+                }
+            }
+
+
+
             foreach(int stream in Globals.limitPCAP.Keys)
             {
                 streamData[stream] = new Dictionary<string, List<double>>();
@@ -192,8 +238,8 @@ namespace Plot_iNET_X.Analyser_Logic
             double value = 0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
             int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][];
+            limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
             foreach (string parName in limit.Keys)
             {
@@ -356,196 +402,7 @@ namespace Plot_iNET_X.Analyser_Logic
             Globals.totalFrames++;
         }
 
-        public void parsePacket2(Packet packet)
-        {
-            int stream;
-            if (packet.Length < 64)
-            {
-                return; //broken packet
-            }
-            if ((packet.Ethernet.EtherType == PcapDotNet.Packets.Ethernet.EthernetType.IpV4) && (packet.Ethernet.IpV4.Udp.Length != 0))
-            {
-                byte[] frame = packet.Ethernet.IpV4.Udp.Payload.ToArray();
-                if (frame.Length < 28) return; //check correctness of UDP payload = -1;
-                else stream = (int)frame.ReadUInt(Globals.inetStart + 4, Endianity.Big);//((frame[Globals.inetStart + 4] << 24) + (frame[Globals.inetStart + 5] << 16) + (frame[Globals.inetStart + 6] << 8) + frame[Globals.inetStart + 7]);
-                //if (!streamID.Contains(stream)) //ignore streams not selected
-                //{
-                //    //this shall never happen?
-                //    //Globals.totalErrors++;
-                //    //Save.LogError(String.Format("-1,{0},{1},Unexpected Stream ID received = {2},\n", Globals.totalFrames, Globals.totalErrors, streamID), -1);
-                //    return;
-                //}
-                if (frame.Length < Globals.streamLength[stream]) return;
-                //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
-
-                uint i = 0;
-                uint parPos, parCnt, parOccurences, parPosTmp;
-                uint parType = 0;
-                double value = 0.0;
-                Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
-                int streamCnt = (int)limit[limit.Keys.First()][1];
-                double[][] limitA = new double[Globals.limitArray[0].Length][];
-                limitA = Globals.limitArray[0];
-                Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
-                foreach (string parName in Globals.channelsSelected[stream])
-                {
-                    parCnt = (uint)(limit[parName][3]);
-                    parPos = (uint)(limitA[parCnt][4]);
-                    parOccurences = (uint)(limitA[parCnt][5]);
-                    parType = (uint)(limitA[parCnt][6]);
-                    switch (parType)
-                    {
-                        case 0: //ANALOG
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                value = getValue.CalcValue(16, (double)((frame[parPos] << 8) + frame[++parPos]), limitA[parCnt][7], limitA[parCnt][8]);
-                                if ((value > limitA[parCnt][9]) || (value < limitA[parCnt][10]))
-                                {
-                                    // To do - handle error reporting
-                                    /* 
-                                    errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
-                                        Globals.totalErrors,                            //total error count for all streams
-                                        streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
-                                        Globals.parError[streamID][parName],            //error count for parameter
-                                        parName,                                        //parameter name
-                                        value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
-                                        parOccur);
-                                    */
-                                    Globals.parError[stream][parName] += 1;
-                                    Globals.packetErrors[stream]["total"]++;
-                                    Globals.totalErrors++;
-                                }
-                                parPos++;
-                            }
-                            break;
-                        //case 1:                
-                        //    break;
-                        case 2: //BCU Status                    
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                //parPosTmp = (uint)(parPos + parOccur * 2);
-                                value = (double)((frame[parPos] << 8) + frame[++parPos]);
-                                if ((value > limit[parName][9]) || (value < limit[parName][10]))
-                                {
-                                    // To do - handle error reporting
-                                    /* 
-                                    errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
-                                        Globals.totalErrors,                            //total error count for all streams
-                                        streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
-                                        Globals.parError[streamID][parName],            //error count for parameter
-                                        parName,                                        //parameter name
-                                        value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
-                                        parOccur);
-                                        * */
-                                    Globals.parError[stream][parName] += 1;
-                                    Globals.packetErrors[stream]["total"]++;
-                                    Globals.totalErrors++;
-                                }
-                                parPos++;
-                            }
-                            break;
-                        case 3:     //BCD temp - BIT101
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                //parPosTmp = (uint)(parPos + parOccur * 2);
-
-                                value = getValue.CalcValue(16, (double)(getValue.bcd2int((frame[parPos] << 8) + frame[++parPos])), limit[parName][7], limit[parName][8]);
-                                if ((value > limit[parName][9]) || (value < limit[parName][10]))
-                                {
-                                    // To do - handle error reporting
-                                    /* 
-                                    errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
-                                        Globals.totalErrors,                            //total error count for all streams
-                                        streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
-                                        Globals.parError[streamID][parName],            //error count for parameter
-                                        parName,                                        //parameter name
-                                        value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
-                                        parOccur);
-                                        */
-                                    Globals.parError[stream][parName] += 1;
-                                    Globals.packetErrors[stream]["total"]++;
-                                    Globals.totalErrors++;
-                                }
-                                parPos++;
-                            }
-                            break;
-                        case 5: //Derrived parameter - TODO
-                            //string sourceParameter = Globals.limitDerrived[parName][0];
-                            string srcName = limitDerrived[parName].srcParameterName;
-                            uint constNumber = 2;
-                            if (limitDerrived[parName].const3 != null) constNumber = 3;
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
-                                parPosTmp = (uint)(parPos + parOccur * 2);
-                                if (constNumber > 2)
-                                    //value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
-                                    value = getValue.GetDerivedParameter((double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limitDerrived[parName].const1, limitDerrived[parName].const2, limitDerrived[parName].const3);
-                                else
-                                    value = getValue.GetDerivedParameter(16, (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]), limit[srcName][7], limit[srcName][8], limitDerrived[parName].const1, limitDerrived[parName].const2);
-                                if ((value > limit[parName][9]) || (value < limit[parName][10]))
-                                {
-                                    // To do - handle error reporting
-                                    /* 
-                                    errorMSG.AppendFormat("{0},{1},{2},{3}, Value of ,{4}, = ,{5},it should be between,{7},{6},occurence=,{8},\n ",
-                                        Globals.totalErrors,                            //total error count for all streams
-                                        streamID, Globals.framesReceived[streamID][0],  //stream ID, frames received per stream
-                                        Globals.parError[streamID][parName],            //error count for parameter
-                                        parName,                                        //parameter name
-                                        value, limit[parName][10], limit[parName][9],   //current parameter value, limit max, limit min 
-                                        parOccur);
-                                        * */
-                                    Globals.parError[stream][parName] += 1;
-                                    Globals.packetErrors[stream]["total"]++;
-                                    Globals.totalErrors++;
-                                }
-                            }
-                            break;
-                        case 6: //Concat --TODO to handle big parameters >16bit
-                            string[] srcName_list = limitDerrived[parName].srcParametersName;
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                //const * P_KAD_ADC_109_B_S1_0_AnalogIn(0) + const2
-                                parPosTmp = (uint)(parPos + parOccur * 2);
-                                if (srcName_list.Length == 2)
-                                {
-                                    var par1Pos = (int)limit[srcName_list[0]][4] + parOccur * 2;
-                                    var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
-                                    var par2Pos = (int)limit[srcName_list[1]][4] + parOccur * 2;
-                                    var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
-                                    value = getValue.getConcatedParameter(16, value1, value2);
-                                }
-                                else if (srcName_list.Length == 4)
-                                {
-                                    var par1Pos = (int)limit[srcName_list[0]][4] + parOccur * 2;
-                                    var value1 = getValue.getConcatedParameter(8, frame[par1Pos], frame[par1Pos + 1]);
-                                    var par2Pos = (int)limit[srcName_list[1]][4] + parOccur * 2;
-                                    var value2 = getValue.getConcatedParameter(8, frame[par2Pos], frame[par2Pos + 1]);
-                                    var par3Pos = (int)limit[srcName_list[2]][4] + parOccur * 2;
-                                    var value3 = getValue.getConcatedParameter(8, frame[par3Pos], frame[par3Pos + 1]);
-                                    var par4Pos = (int)limit[srcName_list[3]][4] + parOccur * 2;
-                                    var value4 = getValue.getConcatedParameter(8, frame[par4Pos], frame[par4Pos + 1]);
-                                    var top = getValue.getConcatedParameter(16, value1, value2);
-                                    var bottom = getValue.getConcatedParameter(16, value3, value4);
-                                    value = getValue.getConcatedParameter(32, top, bottom);
-                                }
-                            }
-                            break;
-                        default:
-                            for (int parOccur = 0; parOccur != parOccurences; parOccur++)
-                            {
-                                parPosTmp = (uint)(parPos + parOccur * 2);
-                                value = (double)((frame[parPosTmp] << 8) + frame[parPosTmp + 1]);
-                            }
-                            break;
-                    } i += 2;
-
-                    streamData[stream][parName].Add(value);
-                }
-            }
-            Globals.totalFrames++;
-        }
-
+       
 
         public void getUDPPayloads()        
         {
@@ -613,19 +470,20 @@ namespace Plot_iNET_X.Analyser_Logic
             //{           
             int pktCnt;
             frames = new List<byte[]>();
+            LogItems.addStreamInfo(String.Format("Starting to parse {0}", pcapfile));
             using (PacketCommunicator communicator = new OfflinePacketDevice(pcapfile).Open(65536,
                                     PacketDeviceOpenAttributes.Promiscuous, // promiscuous mode
                                     1000))     // read timeout
             {
-                communicator.ReceiveSomePackets(out pktCnt,-1, extractUDP);
-                    //communicator.ReceiveSomePackets((0, extractUDP);
+                //communicator.ReceiveSomePackets(out pktCnt,-1, extractUDP);
+                    communicator.ReceivePackets(0,extractUDP);
             }
 
-            for(int f=0;f!=frames.Count;f++)
-            {
-                parseFrame(frames[f], f);
-            }
-            frames.Clear();
+            //for(int f=0;f!=frames.Count;f++)
+            //{
+            //    parseFrame(frames[f], f);
+            //}
+            //frames.Clear();
                 //}
             //}
             //catch (Exception e)
@@ -657,8 +515,8 @@ namespace Plot_iNET_X.Analyser_Logic
                 }
                 if (frame.Length < Globals.streamLength[stream]) return;
                 //MessageBox.Show(String.Format("{0} -- {1}", frame.Length, Globals.streamLength[stream])); // ignore broken iNET-X
-
-                frames.Add(frame);
+                parseFrame(frame, 0);
+                //frames.Add(frame);
             }
         }
 

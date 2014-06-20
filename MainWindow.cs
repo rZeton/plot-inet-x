@@ -345,7 +345,13 @@ namespace Plot_iNET_X
                 //GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
                 if (checkBox6.Checked)
                 {
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
+                    //ThreadPool.QueueUserWorkItem(new WaitCallback(getUDPPayloads));
+                    Thread tSave = null;
+                    tSave = new Thread(() => getUDPPayloads(tSave.ThreadState));
+                    tSave.Name = String.Format("Saving_DATA_Thread_{0}", DateTime.Now.ToString());
+                    tSave.Priority = ThreadPriority.Highest;
+                    tSave.IsBackground = true;
+                    tSave.Start();
                     return;
                 }
                 if (checkBox7.Checked) selChanObj = new selectChannel("from dump");

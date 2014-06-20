@@ -1651,8 +1651,8 @@ public partial class PlotData : Form
             double value = 0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
             int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][];
+            limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
             foreach (string parName in channelsSelected[stream])
             {
@@ -1849,8 +1849,8 @@ public partial class PlotData : Form
             double value = 0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
             int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][];
+            limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
             foreach (string parName in channelsSelected[stream])
             {
@@ -2047,8 +2047,8 @@ public partial class PlotData : Form
             double value = 0.0;
             Dictionary<string, double[]> limit = Globals.limitPCAP[stream];
             int streamCnt = (int)limit[limit.Keys.First()][1];
-            double[][] limitA = new double[Globals.limitArray[0].Length][];
-            limitA = Globals.limitArray[0];
+            double[][] limitA = new double[Globals.limitArray[streamCnt].Length][];
+            limitA = Globals.limitArray[streamCnt];
             Dictionary<string, limitPCAP_Derrived> limitDerrived = Globals.limitPCAP_derrived;
             foreach (string parName in channelsSelected[stream])
             {

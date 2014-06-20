@@ -176,7 +176,7 @@ try
         Globals.streamMsg.AppendFormat("\nStream {0} with {1} parameters", stream, limit[stream].Count);
         foreach (string par in limit[stream].Keys)
         {
-            if (limit[stream][par][4] > streamLength[stream])
+            if (limit[stream][par][4] >= streamLength[stream])
             {
                 streamLength[stream] = (uint)(limit[stream][par][4] + (uint)limit[stream][par][5] * 2);
             }
