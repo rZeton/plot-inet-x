@@ -2,6 +2,8 @@
 ===========
 Ugly and Compact PCAP parser, data validator and plotter (UDP payload only).
 
+DEAD.
+
 TODO:
 -----------
 - FFTs
